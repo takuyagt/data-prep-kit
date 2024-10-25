@@ -13,7 +13,11 @@
 import os
 from typing import Any
 
-from data_cleaning_transform import DataCleaningTransformConfiguration
+from data_cleaning_transform import (
+    DataCleaningTransformConfiguration,
+    duplicate_list_location_default,
+    duplicate_list_location_key,
+)
 from data_processing.data_access import DataAccessFactoryBase
 from data_processing.transform import TransformStatistics
 from data_processing.utils import get_logger
@@ -53,9 +57,12 @@ class DataCleaningSparkRuntime(DefaultSparkTransformRuntime):
         :return: dictionary of transform init params
         """
         data_access = data_access_factory.create_data_access()
-        duplicate_list_location = os.path.abspath(
-            os.path.join(data_access.output_folder, "..", self.params["duplicate_list_location"])
-        )
+        duplicate_list_location = self.params.get(duplicate_list_location_key, duplicate_list_location_default)
+        if not duplicate_list_location.startswith("/"):
+            out_paths = data_access.output_folder.rstrip("/").split("/")
+            dupl_list_paths = duplicate_list_location.split("/")
+            paths = out_paths[:-1] + dupl_list_paths
+            duplicate_list_location = "/".join([p.strip("/") for p in paths])
         if duplicate_list_location.startswith("s3://"):
             _, duplicate_list_location = duplicate_list_location.split("://")
         self.duplicate_list, retries = data_access.get_file(duplicate_list_location)
