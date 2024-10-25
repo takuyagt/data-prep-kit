@@ -24,7 +24,7 @@ from cluster_analysis_transform_python import (
 )
 from data_cleaning_transform_python import DataCleaningPythonTransformConfiguration
 from data_processing.runtime.pure_python import PythonTransformLauncher
-from data_processing.utils import ParamsUtils, get_logger
+from data_processing.utils import ParamsUtils, get_logger, str2bool
 from get_duplicate_list_transform_python import (
     GetDuplicateListPythonTransformConfiguration,
 )
@@ -159,6 +159,10 @@ class ServiceOrchestrator:
             launcher = PythonTransformLauncher(runtime_config=GetDuplicateListPythonTransformConfiguration())
         elif service_short_name == "fdclean":
             launcher = PythonTransformLauncher(runtime_config=DataCleaningPythonTransformConfiguration())
+        else:
+            err_msg = f"Unknown service {service_short_name} specified. Must be one of {SERVICE_DICT.values()}"
+            self.logger.error(err_msg)
+            raise ValueError(err_msg)
         status = launcher.launch()
         return status
 
@@ -225,7 +229,8 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--use_s3",
-        action="store_true",
+        type=lambda x: bool(str2bool(x)),
+        default=False,
         help="use s3",
     )
 
