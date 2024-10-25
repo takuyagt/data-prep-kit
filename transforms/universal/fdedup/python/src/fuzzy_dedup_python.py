@@ -1,4 +1,5 @@
 import argparse
+import ast
 import os
 import sys
 
@@ -119,8 +120,17 @@ class ServiceOrchestrator:
             "output_folder": output_folder,
         }
         if in_args.use_s3:
-            sys_argv.append("--data_s3_cred")
-            sys_argv.append(ParamsUtils.convert_to_ast(s3_creds))
+            if in_args.s3_cred is not None:
+                s3_cred_ast = ParamsUtils.convert_to_ast(in_args.s3_cred)
+                sys_argv.append("--data_s3_cred")
+                sys_argv.append(s3_cred_ast)
+            elif (
+                s3_creds.get("access_key") is not None
+                and s3_creds.get("secret_key") is not None
+                and s3_creds.get("url") is not None
+            ):
+                sys_argv.append("--data_s3_cred")
+                sys_argv.append(ParamsUtils.convert_to_ast(s3_creds))
             sys_argv.append("--data_s3_config")
         else:
             sys_argv.append("--data_local_config")
@@ -205,6 +215,13 @@ def parse_args() -> argparse.Namespace:
         "--use_s3",
         action="store_true",
         help="use s3",
+    )
+
+    parser.add_argument(
+        "--s3_cred",
+        type=ast.literal_eval,
+        default=None,
+        help="ast string of options for s3 credentials",
     )
 
     return parser.parse_args()
