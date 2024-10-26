@@ -6,12 +6,12 @@ USER root
 RUN pip install --no-cache-dir pytest
 
 WORKDIR ${SPARK_HOME}/work-dir
-ARG WHEEL_FILE_NAME
+ARG DPK_WHEEL_FILE_NAME
 
 # Copy and install data processing libraries 
 # These are expected to be placed in the docker context before this is run (see the make image).
 COPY --chown=spark:root data-processing-dist data-processing-dist
-RUN  pip install data-processing-dist/${WHEEL_FILE_NAME}[spark]
+RUN  pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}[spark]
 
 
 # Install project source

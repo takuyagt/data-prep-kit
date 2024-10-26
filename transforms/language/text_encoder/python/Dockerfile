@@ -11,12 +11,12 @@ USER dpk
 WORKDIR /home/dpk
 
 ARG PIP_INSTALL_EXTRA_ARGS
-ARG WHEEL_FILE_NAME
+ARG DPK_WHEEL_FILE_NAME
 
 # Copy and install data processing libraries 
 # These are expected to be placed in the docker context before this is run (see the make image).
 COPY --chown=dpk:root data-processing-dist/ data-processing-dist/
-RUN  pip install data-processing-dist/${WHEEL_FILE_NAME}
+RUN  pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}
 
 # END OF STEPS destined for a data-prep-kit base image 
 

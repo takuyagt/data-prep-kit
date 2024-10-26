@@ -10,12 +10,12 @@ RUN pip install --no-cache-dir pytest
 USER root
 RUN mkdir -p /home/ray/.cache && chmod -R 777 /home/ray/.cache
 USER ray
-ARG WHEEL_FILE_NAME
+ARG DPK_WHEEL_FILE_NAME
 
 # Copy and install data processing libraries 
 # These are expected to be placed in the docker context before this is run (see the make image).
 COPY --chown=ray:users data-processing-dist data-processing-dist
-RUN  pip install data-processing-dist/${WHEEL_FILE_NAME}[ray]
+RUN  pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}[ray]
 
 COPY --chown=ray:users python-transform/  python-transform/
 RUN cd python-transform && pip install --no-cache-dir -e .

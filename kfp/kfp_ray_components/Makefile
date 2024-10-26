@@ -22,7 +22,7 @@ endif
 	$(eval LIB_WHEEL_FILE := $(shell basename $(LIB_WHEEL_FILE)))
 	$(MAKE) .defaults.copy-lib LIB_PATH=$(REPOROOT)/kfp/kfp_support_lib/shared_workflow_support LIB_NAME=shared_workflow_support_lib
 	$(MAKE) .defaults.copy-lib LIB_PATH=$(REPOROOT)/kfp/kfp_support_lib/$(WORKFLOW_SUPPORT_LIB) LIB_NAME=workflow_support_lib
-	$(MAKE) WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
+	$(MAKE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
 	rm -rf data-processing-dist
 	rm -rf shared_workflow_support_lib
 	rm -rf workflow_support_lib

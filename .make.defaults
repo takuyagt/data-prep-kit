@@ -226,7 +226,7 @@ __check_defined = \
 		--platform $(DOCKER_PLATFORM)  			\
 		--build-arg EXTRA_INDEX_URL=$(EXTRA_INDEX_URL)	\
 		--build-arg BASE_IMAGE=$(BASE_IMAGE)  		\
-		--build-arg WHEEL_FILE_NAME=$(WHEEL_FILE_NAME) \
+		--build-arg DPK_WHEEL_FILE_NAME=$(DPK_WHEEL_FILE_NAME) \
 		--build-arg BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')  	\
 		--build-arg GIT_COMMIT=$(shell git log -1 --format=%h) . 
 	$(DOCKER) tag $(DOCKER_LOCAL_IMAGE)  $(DOCKER_REMOTE_IMAGE)
@@ -270,7 +270,7 @@ __check_defined = \
 	@# Help: Build the Python $(DOCKER_LOCAL_IMAGE) using the the wheel file for the library
 	@$(eval LIB_WHEEL_FILE := $(shell find data-processing-dist/*.whl))
 	$(eval LIB_WHEEL_FILE := $(shell basename $(LIB_WHEEL_FILE)))
-	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
+	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
 	-rm -rf data-processing-dist
 
 # Build an image using the local Dockerfile and make the data-processing-lib/ray
@@ -306,7 +306,7 @@ __check_defined = \
 	if [ -e ../python ]; then								\
 		$(MAKE) LIB_PATH=../python LIB_NAME=python-transform .defaults.copy-lib;	\
 	fi
-	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
+	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
 	-rm -rf python-transform 
 	-rm -rf data-processing-dist
 
@@ -345,7 +345,7 @@ __check_defined = \
 	if [ -e ../python ]; then								\
 		$(MAKE) LIB_PATH=../python LIB_NAME=python-transform .defaults.copy-lib;	\
 	fi
-	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) BASE_IMAGE=$(DOCKER_SPARK_BASE_IMAGE) WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
+	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) BASE_IMAGE=$(DOCKER_SPARK_BASE_IMAGE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
 	-rm -rf python-transform 
 	-rm -rf data-processing-dist
 

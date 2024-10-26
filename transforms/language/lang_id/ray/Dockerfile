@@ -6,7 +6,7 @@ RUN pip install --upgrade --no-cache-dir pip
 
 # install pytest
 RUN pip install --no-cache-dir pytest
-ARG WHEEL_FILE_NAME
+ARG DPK_WHEEL_FILE_NAME
 
 # set up environment required to install and use huggingface and fasttext
 USER root
@@ -17,7 +17,7 @@ USER ray
 # Copy and install data processing libraries 
 # These are expected to be placed in the docker context before this is run (see the make image).
 COPY --chown=ray:users data-processing-dist data-processing-dist
-RUN  pip install data-processing-dist/${WHEEL_FILE_NAME}[ray]
+RUN  pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}[ray]
 
 ## Copy the python version of the tansform
 COPY --chown=ray:users python-transform/  python-transform/
