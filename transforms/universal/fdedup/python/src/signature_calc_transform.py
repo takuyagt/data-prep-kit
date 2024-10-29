@@ -48,6 +48,8 @@ word_shingle_size_key = "word_shingle_size"
 """ This key holds the size of the word shingles calculated for each document"""
 num_segments_key = "num_segments"
 """ This key holds the number of segments across which we divide the hashing space for each band"""
+overwrite_output_path_key = "overwrite_output_path"
+""" This key holds the overwrite output path"""
 
 # command line arguments
 document_id_column_cli_param = f"{cli_prefix}{document_id_column_key}"
@@ -68,6 +70,8 @@ word_shingle_size_cli_param = f"{cli_prefix}{word_shingle_size_key}"
 """ The size of the word shingles calculated for each document"""
 num_segments_cli_param = f"{cli_prefix}{num_segments_key}"
 """ The number of segments across which we divide the hashing space for each band"""
+overwrite_output_path_cli_param = f"{cli_prefix}{overwrite_output_path_key}"
+""" The overwrite output path"""
 
 captured_arg_keys = [
     document_id_column_key,
@@ -79,6 +83,7 @@ captured_arg_keys = [
     jaccard_similarity_threshold_key,
     word_shingle_size_key,
     num_segments_key,
+    overwrite_output_path_key,
 ]
 
 # defaults
@@ -100,6 +105,8 @@ jaccard_similarity_threshold_default = 0.75
 """ Default Jaccard similarity threshold (from FineWeb https://arxiv.org/pdf/2406.17557)"""
 num_segments_default = 1
 """ Default number of segments across which we divide the hashing space for each band"""
+overwrite_output_path_default = None
+""" Default overwrite output path (no overwrite)"""
 
 
 NUMBERS_PATTERN = re.compile(r"\d+(\.\d+)?")
@@ -136,7 +143,8 @@ class SignatureCalculationTransform(AbstractTableTransform):
         num_minhashes_per_band: number of minhashes to use in each band
         jaccard_similarity_threshold: Jaccard similarity threshold above which two documents are duplicates
         word_shingle_size: the size of the word shingles calculated for each document
-        num_segments the number of segments across which we divide the hashing space for each band
+        num_segments: the number of segments across which we divide the hashing space for each band
+        overwrite_output_path: specify an output path other than the one used by the data_access
     """
 
     def __init__(self, config: dict[str, Any]):
@@ -158,6 +166,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
         self.num_segments = config.get(num_segments_key, num_segments_default)
         self.num_bands = config.get(num_bands_key, num_bands_default)
         self.num_rows = config.get(num_minhashes_per_band_key, num_minhashes_per_band_default)
+        self.overwrite_output_path = config.get(overwrite_output_path_key, overwrite_output_path_default)
         # use this dataframe to store the minhashes and size for each document
         self.all_minhashes: pl.DataFrame = None
         # use this dataframe to store the band hashes for each document
@@ -311,7 +320,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
                 last_file_name_path = Path(self.last_file_name)
                 suffix_path = last_file_name_path.relative_to(self.data_access.input_folder)
                 save_path = os.path.join(
-                    self.data_access.output_folder,
+                    self.overwrite_output_path if self.overwrite_output_path else self.data_access.output_folder,
                     "bands",
                     f"band={band_ix}",
                     f"segment={segment_index}",
@@ -469,6 +478,12 @@ class SignatureCalculationTransformConfiguration(TransformConfiguration):
             type=int,
             default=num_segments_default,
             help="the number of segments across which we divide the hashing space for each band",
+        )
+        parser.add_argument(
+            f"--{overwrite_output_path_cli_param}",
+            type=str,
+            default=overwrite_output_path_default,
+            help="overwrite of the output path",
         )
 
     def apply_input_params(self, args: Namespace) -> bool:
