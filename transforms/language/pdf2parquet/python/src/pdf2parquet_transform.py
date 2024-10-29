@@ -27,10 +27,19 @@ import pyarrow as pa
 from data_processing.transform import AbstractBinaryTransform, TransformConfiguration
 from data_processing.utils import TransformUtils, get_logger, str2bool
 from data_processing.utils.cli_utils import CLIArgumentProvider
-from docling.datamodel.base_models import DocumentStream
-from docling.datamodel.document import ConvertedDocument, DocumentConversionInput
-from docling.document_converter import DocumentConverter
-from docling.pipeline.standard_model_pipeline import PipelineOptions
+from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
+from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
+from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
+from docling.datamodel.base_models import DocumentStream, MimeTypeToFormat
+from docling.datamodel.pipeline_options import (
+    EasyOcrOptions,
+    OcrOptions,
+    PdfPipelineOptions,
+    TesseractCliOcrOptions,
+    TesseractOcrOptions,
+)
+from docling.document_converter import DocumentConverter, InputFormat, PdfFormatOption
+from docling.models.base_ocr_model import OcrOptions
 
 
 logger = get_logger(__name__)
@@ -41,12 +50,34 @@ pdf2parquet_artifacts_path_key = f"artifacts_path"
 pdf2parquet_contents_type_key = f"contents_type"
 pdf2parquet_do_table_structure_key = f"do_table_structure"
 pdf2parquet_do_ocr_key = f"do_ocr"
+pdf2parquet_ocr_engine_key = f"ocr_engine"
+pdf2parquet_bitmap_area_threshold_key = f"bitmap_area_threshold"
+pdf2parquet_pdf_backend_key = f"pdf_backend"
 pdf2parquet_double_precision_key = f"double_precision"
 
 
 class pdf2parquet_contents_types(str, enum.Enum):
     MARKDOWN = "text/markdown"
+    TEXT = "text/plain"
     JSON = "application/json"
+
+    def __str__(self):
+        return str(self.value)
+
+
+class pdf2parquet_pdf_backend(str, enum.Enum):
+    PYPDFIUM2 = "pypdfium2"
+    DLPARSE_V1 = "dlparse_v1"
+    DLPARSE_V2 = "dlparse_v2"
+
+    def __str__(self):
+        return str(self.value)
+
+
+class pdf2parquet_ocr_engine(str, enum.Enum):
+    EASYOCR = "easyocr"
+    TESSERACT_CLI = "tesseract_cli"
+    TESSERACT = "tesseract"
 
     def __str__(self):
         return str(self.value)
@@ -55,6 +86,9 @@ class pdf2parquet_contents_types(str, enum.Enum):
 pdf2parquet_contents_type_default = pdf2parquet_contents_types.MARKDOWN
 pdf2parquet_do_table_structure_default = True
 pdf2parquet_do_ocr_default = True
+pdf2parquet_bitmap_area_threshold_default = 0.05
+pdf2parquet_ocr_engine_default = pdf2parquet_ocr_engine.EASYOCR
+pdf2parquet_pdf_backend_default = pdf2parquet_pdf_backend.DLPARSE_V2
 pdf2parquet_double_precision_default = 8
 
 pdf2parquet_artifacts_path_cli_param = f"{cli_prefix}{pdf2parquet_artifacts_path_key}"
@@ -63,6 +97,11 @@ pdf2parquet_do_table_structure_cli_param = (
     f"{cli_prefix}{pdf2parquet_do_table_structure_key}"
 )
 pdf2parquet_do_ocr_cli_param = f"{cli_prefix}{pdf2parquet_do_ocr_key}"
+pdf2parquet_bitmap_area_threshold__cli_param = (
+    f"{cli_prefix}{pdf2parquet_bitmap_area_threshold_key}"
+)
+pdf2parquet_ocr_engine_cli_param = f"{cli_prefix}{pdf2parquet_ocr_engine_key}"
+pdf2parquet_pdf_backend_cli_param = f"{cli_prefix}{pdf2parquet_pdf_backend_key}"
 pdf2parquet_double_precision_cli_param = (
     f"{cli_prefix}{pdf2parquet_double_precision_key}"
 )
@@ -93,18 +132,61 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
             pdf2parquet_do_table_structure_key, pdf2parquet_do_table_structure_default
         )
         self.do_ocr = config.get(pdf2parquet_do_ocr_key, pdf2parquet_do_ocr_default)
+        self.ocr_engine_name = config.get(
+            pdf2parquet_ocr_engine_key, pdf2parquet_ocr_engine_default
+        )
+        if not isinstance(self.ocr_engine_name, pdf2parquet_ocr_engine):
+            self.ocr_engine_name = pdf2parquet_ocr_engine[self.ocr_engine_name]
+        self.bitmap_area_threshold = config.get(
+            pdf2parquet_bitmap_area_threshold_key,
+            pdf2parquet_bitmap_area_threshold_default,
+        )
+        self.pdf_backend_name = config.get(
+            pdf2parquet_pdf_backend_key, pdf2parquet_pdf_backend_default
+        )
+        if not isinstance(self.pdf_backend_name, pdf2parquet_pdf_backend):
+            self.pdf_backend_name = pdf2parquet_pdf_backend[self.pdf_backend_name]
         self.double_precision = config.get(
             pdf2parquet_double_precision_key, pdf2parquet_double_precision_default
         )
 
         logger.info("Initializing models")
-        pipeline_options = PipelineOptions(
+        pipeline_options = PdfPipelineOptions(
+            artifacts_path=self.artifacts_path,
             do_table_structure=self.do_table_structure,
             do_ocr=self.do_ocr,
+            ocr_options=self._get_ocr_engine(self.ocr_engine_name),
         )
+        pipeline_options.ocr_options.bitmap_area_threshold = self.bitmap_area_threshold
+
         self._converter = DocumentConverter(
-            artifacts_path=self.artifacts_path, pipeline_options=pipeline_options
+            format_options={
+                InputFormat.PDF: PdfFormatOption(
+                    pipeline_options=pipeline_options,
+                    backend=self._get_pdf_backend(self.pdf_backend_name),
+                )
+            }
         )
+
+    def _get_ocr_engine(self, engine_name: pdf2parquet_ocr_engine) -> OcrOptions:
+        if engine_name == pdf2parquet_ocr_engine.EASYOCR:
+            return EasyOcrOptions()
+        elif engine_name == pdf2parquet_ocr_engine.TESSERACT_CLI:
+            return TesseractCliOcrOptions()
+        elif engine_name == pdf2parquet_ocr_engine.TESSERACT:
+            return TesseractOcrOptions()
+
+        raise RuntimeError(f"Unknown OCR engine `{engine_name}`")
+
+    def _get_pdf_backend(self, backend_name: pdf2parquet_pdf_backend):
+        if backend_name == pdf2parquet_pdf_backend.DLPARSE_V1:
+            return DoclingParseDocumentBackend
+        elif backend_name == pdf2parquet_pdf_backend.DLPARSE_V2:
+            return DoclingParseV2DocumentBackend
+        elif backend_name == pdf2parquet_pdf_backend.PYPDFIUM2:
+            return PyPdfiumDocumentBackend
+
+        raise RuntimeError(f"Unknown PDF backend `{backend_name}`")
 
     def _update_metrics(self, num_pages: int, elapse_time: float):
         # This is implemented in the ray version
@@ -116,26 +198,26 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
         # Convert PDF to Markdown
         start_time = time.time()
         buf = io.BytesIO(content_bytes)
-        input_docs = DocumentStream(filename=doc_filename, stream=buf)
-        input = DocumentConversionInput.from_streams([input_docs])
+        input_doc = DocumentStream(name=doc_filename, stream=buf)
 
-        converted_docs = self._converter.convert(input)
-        doc: ConvertedDocument = next(converted_docs, None)
-        if doc is None or doc.output is None:
-            raise RuntimeError("Failed in converting.")
+        conv_res = self._converter.convert(input_doc)
+        doc = conv_res.document
         elapse_time = time.time() - start_time
 
         if self.contents_type == pdf2parquet_contents_types.MARKDOWN:
-            content_string = doc.render_as_markdown()
+            content_string = doc.export_to_markdown()
+        elif self.contents_type == pdf2parquet_contents_types.TEXT:
+            content_string = doc.export_to_text()
         elif self.contents_type == pdf2parquet_contents_types.JSON:
             content_string = pd.io.json.ujson_dumps(
-                doc.render_as_dict(), double_precision=self.double_precision
+                doc.export_to_dict(), double_precision=self.double_precision
             )
         else:
             raise RuntimeError(f"Uknown contents_type {self.contents_type}.")
         num_pages = len(doc.pages)
-        num_tables = len(doc.output.tables) if doc.output.tables is not None else 0
-        num_doc_elements = len(doc.output.main_text) if doc.output.main_text is not None else 0
+        num_tables = len(doc.tables)
+        num_doc_elements = len(doc.texts)
+        document_hash = doc.origin.binary_hash
 
         self._update_metrics(num_pages=num_pages, elapse_time=elapse_time)
 
@@ -146,6 +228,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
             "num_tables": num_tables,
             "num_doc_elements": num_doc_elements,
             "document_id": str(uuid.uuid4()),
+            "document_hash": document_hash,
             "ext": ext,
             "hash": TransformUtils.str_to_hash(content_string),
             "size": len(content_string),
@@ -172,11 +255,13 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
         number_of_rows = 0
 
         try:
+            # TODO: Docling has an inner-function with a stronger type checking.
+            # Once it is exposed as public, we can use it here as well. 
             root_kind = filetype.guess(byte_array)
 
-            # Process single PDF documents
-            if root_kind is not None and root_kind.mime == "application/pdf":
-                logger.debug(f"Detected root file {file_name=} as PDF.")
+            # Process single documents
+            if root_kind is not None and root_kind.mime in MimeTypeToFormat:
+                logger.debug(f"Detected root file {file_name=} as {root_kind.mime}.")
 
                 try:
                     root_ext = root_kind.extension
@@ -195,10 +280,10 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
                 except Exception as e:
                     failed_doc_id.append(file_name)
                     logger.warning(
-                        f"Exception {str(e)} processing file {archive_doc_filename}, skipping"
+                        f"Exception {str(e)} processing file {file_name}, skipping"
                     )
 
-            # Process ZIP archive of PDF documents
+            # Process ZIP archive of documents
             elif root_kind is not None and root_kind.mime == "application/zip":
                 logger.debug(
                     f"Detected root file {file_name=} as ZIP. Iterating through the archive content."
@@ -218,9 +303,9 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
 
                                 # Detect file type
                                 kind = filetype.guess(content_bytes)
-                                if kind is None or kind.mime != "application/pdf":
+                                if kind is None or kind.mime not in MimeTypeToFormat:
                                     logger.info(
-                                        f"File {archive_doc_filename=} is not detected as PDF but {kind=}. Skipping."
+                                        f"File {archive_doc_filename=} is not detected as valid format {kind=}. Skipping."
                                     )
                                     skipped_doc_id.append(archive_doc_filename)
                                     continue
@@ -248,7 +333,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
 
             else:
                 logger.warning(
-                    f"File {file_name=} is not detected as PDF nor as ZIP but {kind=}. Skipping."
+                    f"File {file_name=} is not detected as a supported type nor as ZIP but {kind=}. Skipping."
                 )
 
             table = pa.Table.from_pylist(data)
@@ -310,6 +395,26 @@ class Pdf2ParquetTransformConfiguration(TransformConfiguration):
             type=str2bool,
             help="If true, optical character recognition (OCR) will be used to read the PDF content.",
             default=pdf2parquet_do_ocr_default,
+        )
+        parser.add_argument(
+            f"--{pdf2parquet_ocr_engine_cli_param}",
+            type=pdf2parquet_ocr_engine,
+            choices=list(pdf2parquet_ocr_engine),
+            help="The OCR engine to use.",
+            default=pdf2parquet_ocr_engine.EASYOCR,
+        )
+        parser.add_argument(
+            f"--{pdf2parquet_bitmap_area_threshold__cli_param}",
+            type=float,
+            help="Threshold for running OCR on bitmap figures embedded in document. The threshold is computed as the fraction of the area covered by the bitmap, compared to the whole page area.",
+            default=pdf2parquet_bitmap_area_threshold_default,
+        )
+        parser.add_argument(
+            f"--{pdf2parquet_pdf_backend_cli_param}",
+            type=pdf2parquet_pdf_backend,
+            choices=list(pdf2parquet_pdf_backend),
+            help="The PDF backend to use.",
+            default=pdf2parquet_pdf_backend.DLPARSE_V2,
         )
         parser.add_argument(
             f"--{pdf2parquet_double_precision_cli_param}",
