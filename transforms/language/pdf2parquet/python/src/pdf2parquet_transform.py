@@ -19,7 +19,7 @@ import zipfile
 from argparse import ArgumentParser, Namespace
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import filetype
 import pandas as pd
@@ -48,6 +48,7 @@ logger = get_logger(__name__, level="DEBUG")
 
 shortname = "pdf2parquet"
 cli_prefix = f"{shortname}_"
+pdf2parquet_batch_size_key = f"batch_size"
 pdf2parquet_artifacts_path_key = f"artifacts_path"
 pdf2parquet_contents_type_key = f"contents_type"
 pdf2parquet_do_table_structure_key = f"do_table_structure"
@@ -85,6 +86,7 @@ class pdf2parquet_ocr_engine(str, enum.Enum):
         return str(self.value)
 
 
+pdf2parquet_batch_size_default = -1
 pdf2parquet_contents_type_default = pdf2parquet_contents_types.MARKDOWN
 pdf2parquet_do_table_structure_default = True
 pdf2parquet_do_ocr_default = True
@@ -93,6 +95,7 @@ pdf2parquet_ocr_engine_default = pdf2parquet_ocr_engine.EASYOCR
 pdf2parquet_pdf_backend_default = pdf2parquet_pdf_backend.DLPARSE_V2
 pdf2parquet_double_precision_default = 8
 
+pdf2parquet_batch_size_cli_param = f"{cli_prefix}{pdf2parquet_batch_size_key}"
 pdf2parquet_artifacts_path_cli_param = f"{cli_prefix}{pdf2parquet_artifacts_path_key}"
 pdf2parquet_contents_type_cli_param = f"{cli_prefix}{pdf2parquet_contents_type_key}"
 pdf2parquet_do_table_structure_cli_param = (
@@ -122,6 +125,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
 
         super().__init__(config)
 
+        self.batch_size = config.get(pdf2parquet_batch_size_key, pdf2parquet_batch_size_default)
         self.artifacts_path = config.get(pdf2parquet_artifacts_path_key, None)
         if self.artifacts_path is not None:
             self.artifacts_path = Path(self.artifacts_path)
@@ -181,6 +185,8 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
         finally:
             lock.release()
             logger.debug(f"Lock {lock.lock_filename} released.")
+        
+        self.buffer = []
 
     def _get_ocr_engine(self, engine_name: pdf2parquet_ocr_engine) -> OcrOptions:
         if engine_name == pdf2parquet_ocr_engine.EASYOCR:
@@ -262,7 +268,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
         for each PDF file detected in the archive.
         """
 
-        data = []
+        data = [*self.buffer]
         success_doc_id = []
         failed_doc_id = []
         skipped_doc_id = []
@@ -350,19 +356,49 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
                     f"File {file_name=} is not detected as a supported type nor as ZIP but {kind=}. Skipping."
                 )
 
-            table = pa.Table.from_pylist(data)
+            
             metadata = {
-                "nrows": len(table),
+                "nrows": number_of_rows,
                 "nsuccess": len(success_doc_id),
                 "nfail": len(failed_doc_id),
                 "nskip": len(skipped_doc_id),
             }
-            return [
-                (TransformUtils.convert_arrow_to_binary(table=table), ".parquet")
-            ], metadata
+
+            batch_results = []
+            self.buffer = []
+            if self.batch_size <= 0:
+                # we do a single batch
+                table = pa.Table.from_pylist(data)
+                batch_results.append((TransformUtils.convert_arrow_to_binary(table=table), ".parquet"))
+            else:
+                # we create result files containing batch_size rows/documents
+                num_left = len(data)
+                start_row = 0
+                while num_left >= self.batch_size:
+                    table = pa.Table.from_pylist(data[start_row:self.batch_size])
+                    batch_results.append((TransformUtils.convert_arrow_to_binary(table=table), ".parquet"))
+                    
+                    start_row += self.batch_size
+                    num_left = num_left - self.batch_size
+                
+                if num_left >= 0:
+                    self.buffer = data[start_row:]
+
+            return batch_results, metadata
         except Exception as e:
             logger.error(f"Fatal error with file {file_name=}. No results produced.")
             raise
+
+    def flush_binary(self) -> tuple[list[tuple[bytes, str]], dict[str, Any]]:
+        result = []
+        if len(self.buffer) > 0:
+            logger.debug(f"flushing buffered table with {len(self.buffer)} rows.")
+            table = pa.Table.from_pylist(self.buffer)
+            result.append((TransformUtils.convert_arrow_to_binary(table=table), ".parquet"))
+            self.buffer = None
+        else:
+            logger.debug(f"Empty buffer. nothing to flush.")
+        return result, {}
 
 
 class Pdf2ParquetTransformConfiguration(TransformConfiguration):
@@ -385,6 +421,12 @@ class Pdf2ParquetTransformConfiguration(TransformConfiguration):
         By convention a common prefix should be used for all mutator-specific CLI args
         (e.g, noop_, pii_, etc.)
         """
+        parser.add_argument(
+            f"--{pdf2parquet_batch_size_cli_param}",
+            type=int,
+            help="Number of documents to be saved in the same result table. A value of -1 will generate one result file for each input file.",
+            default=pdf2parquet_batch_size_default,
+        )
         parser.add_argument(
             f"--{pdf2parquet_artifacts_path_cli_param}",
             type=str,
