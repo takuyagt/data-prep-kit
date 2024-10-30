@@ -43,8 +43,8 @@ from docling.document_converter import DocumentConverter, InputFormat, PdfFormat
 from docling.models.base_ocr_model import OcrOptions
 
 
-# logger = get_logger(__name__)
-logger = get_logger(__name__, level="DEBUG")
+logger = get_logger(__name__)
+# logger = get_logger(__name__, level="DEBUG")
 
 shortname = "pdf2parquet"
 cli_prefix = f"{shortname}_"
