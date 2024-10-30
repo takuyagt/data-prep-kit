@@ -27,6 +27,7 @@ import pyarrow as pa
 from data_processing.transform import AbstractBinaryTransform, TransformConfiguration
 from data_processing.utils import TransformUtils, get_logger, str2bool
 from data_processing.utils.cli_utils import CLIArgumentProvider
+from data_processing.utils.multilock import MultiLock
 from docling.backend.docling_parse_backend import DoclingParseDocumentBackend
 from docling.backend.docling_parse_v2_backend import DoclingParseV2DocumentBackend
 from docling.backend.pypdfium2_backend import PyPdfiumDocumentBackend
@@ -42,7 +43,8 @@ from docling.document_converter import DocumentConverter, InputFormat, PdfFormat
 from docling.models.base_ocr_model import OcrOptions
 
 
-logger = get_logger(__name__)
+# logger = get_logger(__name__)
+logger = get_logger(__name__, level="DEBUG")
 
 shortname = "pdf2parquet"
 cli_prefix = f"{shortname}_"
@@ -159,14 +161,26 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
         )
         pipeline_options.ocr_options.bitmap_area_threshold = self.bitmap_area_threshold
 
-        self._converter = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(
-                    pipeline_options=pipeline_options,
-                    backend=self._get_pdf_backend(self.pdf_backend_name),
-                )
-            }
-        )
+        lock = MultiLock("dpk_pdf2parquet_init")
+        try:
+            logger.debug(
+                f"Going to acquire lock {lock.lock_filename} for synchronizing global filesystem operations."
+            )
+            # TODO: we want to use the lock without timeout, but the implementation must be fixed before
+            locked = lock.acquire(timeout=120)
+            logger.debug(f"Lock {lock.lock_filename} acquired.")
+
+            self._converter = DocumentConverter(
+                format_options={
+                    InputFormat.PDF: PdfFormatOption(
+                        pipeline_options=pipeline_options,
+                        backend=self._get_pdf_backend(self.pdf_backend_name),
+                    )
+                }
+            )
+        finally:
+            lock.release()
+            logger.debug(f"Lock {lock.lock_filename} released.")
 
     def _get_ocr_engine(self, engine_name: pdf2parquet_ocr_engine) -> OcrOptions:
         if engine_name == pdf2parquet_ocr_engine.EASYOCR:
@@ -256,7 +270,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
 
         try:
             # TODO: Docling has an inner-function with a stronger type checking.
-            # Once it is exposed as public, we can use it here as well. 
+            # Once it is exposed as public, we can use it here as well.
             root_kind = filetype.guess(byte_array)
 
             # Process single documents
