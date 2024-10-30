@@ -170,8 +170,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
             logger.debug(
                 f"Going to acquire lock {lock.lock_filename} for synchronizing global filesystem operations."
             )
-            # TODO: we want to use the lock without timeout, but the implementation must be fixed before
-            locked = lock.acquire(timeout=120)
+            locked = lock.acquire()
             logger.debug(f"Lock {lock.lock_filename} acquired.")
 
             self._converter = DocumentConverter(
