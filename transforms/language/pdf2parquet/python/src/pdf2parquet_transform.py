@@ -181,6 +181,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
                     )
                 }
             )
+            self._converter.initialize_pipeline(InputFormat.PDF)
         finally:
             lock.release()
             logger.debug(f"Lock {lock.lock_filename} released.")
