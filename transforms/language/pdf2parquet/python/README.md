@@ -48,6 +48,7 @@ The transform can be initialized with the following parameters.
 
 | Parameter  | Default  | Description  |
 |------------|----------|--------------|
+| `batch_size`                 | -1 | Number of documents to be saved in the same result table. A value of -1 will generate one result file for each input file. |
 | `artifacts_path`             | <unset> | Path where to Docling models artifacts are located, if unset they will be downloaded and fetched from the [HF_HUB_CACHE](https://huggingface.co/docs/huggingface_hub/en/guides/manage-cache) folder. |
 | `contents_type`         | `text/markdown`        | The output type for the `contents` column. Valid types are `text/markdown`, `text/plain` and `application/json`. |
 | `do_table_structure`         | `True`        | If true, detected tables will be processed with the table structure model. |
