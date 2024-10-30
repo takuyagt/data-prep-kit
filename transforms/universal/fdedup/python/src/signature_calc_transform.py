@@ -20,10 +20,10 @@ import mmh3
 import numpy as np
 import polars as pl
 import pyarrow as pa
+from data_processing.data_access import DataAccessFactory
 from data_processing.transform import AbstractTableTransform, TransformConfiguration
 from data_processing.utils import CLIArgumentProvider
 from Murmur_MH import Murmur_MH
-from scipy.integrate import quad as integrate
 
 
 short_name = "minhash"
@@ -48,8 +48,6 @@ word_shingle_size_key = "word_shingle_size"
 """ This key holds the size of the word shingles calculated for each document"""
 num_segments_key = "num_segments"
 """ This key holds the number of segments across which we divide the hashing space for each band"""
-overwrite_output_path_key = "overwrite_output_path"
-""" This key holds the overwrite output path"""
 
 # command line arguments
 document_id_column_cli_param = f"{cli_prefix}{document_id_column_key}"
@@ -70,8 +68,6 @@ word_shingle_size_cli_param = f"{cli_prefix}{word_shingle_size_key}"
 """ The size of the word shingles calculated for each document"""
 num_segments_cli_param = f"{cli_prefix}{num_segments_key}"
 """ The number of segments across which we divide the hashing space for each band"""
-overwrite_output_path_cli_param = f"{cli_prefix}{overwrite_output_path_key}"
-""" The overwrite output path"""
 
 captured_arg_keys = [
     document_id_column_key,
@@ -83,7 +79,6 @@ captured_arg_keys = [
     jaccard_similarity_threshold_key,
     word_shingle_size_key,
     num_segments_key,
-    overwrite_output_path_key,
 ]
 
 # defaults
@@ -105,8 +100,10 @@ jaccard_similarity_threshold_default = 0.75
 """ Default Jaccard similarity threshold (from FineWeb https://arxiv.org/pdf/2406.17557)"""
 num_segments_default = 1
 """ Default number of segments across which we divide the hashing space for each band"""
-overwrite_output_path_default = None
-""" Default overwrite output path (no overwrite)"""
+
+
+sigcalc_data_factory_key = "sc_data_factory"
+sigcalc_data_access_key = "sc_data_access"
 
 
 NUMBERS_PATTERN = re.compile(r"\d+(\.\d+)?")
@@ -144,7 +141,6 @@ class SignatureCalculationTransform(AbstractTableTransform):
         jaccard_similarity_threshold: Jaccard similarity threshold above which two documents are duplicates
         word_shingle_size: the size of the word shingles calculated for each document
         num_segments: the number of segments across which we divide the hashing space for each band
-        overwrite_output_path: specify an output path other than the one used by the data_access
     """
 
     def __init__(self, config: dict[str, Any]):
@@ -166,7 +162,6 @@ class SignatureCalculationTransform(AbstractTableTransform):
         self.num_segments = config.get(num_segments_key, num_segments_default)
         self.num_bands = config.get(num_bands_key, num_bands_default)
         self.num_rows = config.get(num_minhashes_per_band_key, num_minhashes_per_band_default)
-        self.overwrite_output_path = config.get(overwrite_output_path_key, overwrite_output_path_default)
         # use this dataframe to store the minhashes and size for each document
         self.all_minhashes: pl.DataFrame = None
         # use this dataframe to store the band hashes for each document
@@ -177,6 +172,12 @@ class SignatureCalculationTransform(AbstractTableTransform):
         self.bytes_processed = 0
         self.data_access = config.get("data_access")
         self.last_file_name = None
+        self.sc_data_access = config.get(sigcalc_data_access_key, None)
+        if self.sc_data_access is None:
+            self.sc_daf = config.get(sigcalc_data_factory_key, None)
+            if self.sc_daf is None:
+                raise RuntimeError(f"Missing configuration value for key {sigcalc_data_factory_key}")
+            self.sc_data_access = self.sc_daf.create_data_access()
 
     def transform(self, table: pa.Table, file_name: str = None) -> tuple[list[pa.Table], dict[str, Any]]:
         """
@@ -319,15 +320,17 @@ class SignatureCalculationTransform(AbstractTableTransform):
                 common_path = os.path.commonpath([self.data_access.input_folder, self.last_file_name])
                 last_file_name_path = Path(self.last_file_name)
                 suffix_path = last_file_name_path.relative_to(self.data_access.input_folder)
+                if self.sc_data_access.output_folder is None:
+                    self.sc_data_access.output_folder = self.data_access.output_folder
                 save_path = os.path.join(
-                    self.overwrite_output_path if self.overwrite_output_path else self.data_access.output_folder,
+                    self.sc_data_access.output_folder,
                     "bands",
                     f"band={band_ix}",
                     f"segment={segment_index}",
                     suffix_path,
                 )
                 segment_band_minhash_table = segment_band_minhash_df.to_arrow()
-                bytes_written, _, _ = self.data_access.save_table(save_path, segment_band_minhash_table)
+                bytes_written, _, _ = self.sc_data_access.save_table(save_path, segment_band_minhash_table)
                 if bytes_written > 0:
                     num_tables_written += 1
                     num_docs_written += segment_band_minhash_table.num_rows
@@ -412,8 +415,10 @@ class SignatureCalculationTransformConfiguration(TransformConfiguration):
         super().__init__(
             name=short_name,
             transform_class=SignatureCalculationTransform,
-            remove_from_metadata=[],
+            remove_from_metadata=[sigcalc_data_factory_key],
         )
+        self.daf = DataAccessFactory(cli_arg_prefix="scdata_")
+
         from data_processing.utils import get_logger
 
         self.logger = get_logger(__name__, level="INFO")
@@ -479,12 +484,7 @@ class SignatureCalculationTransformConfiguration(TransformConfiguration):
             default=num_segments_default,
             help="the number of segments across which we divide the hashing space for each band",
         )
-        parser.add_argument(
-            f"--{overwrite_output_path_cli_param}",
-            type=str,
-            default=overwrite_output_path_default,
-            help="overwrite of the output path",
-        )
+        self.daf.add_input_params(parser=parser)
 
     def apply_input_params(self, args: Namespace) -> bool:
         """
@@ -495,4 +495,5 @@ class SignatureCalculationTransformConfiguration(TransformConfiguration):
         captured = CLIArgumentProvider.capture_parameters(args, cli_prefix, False)
         self.params = self.params | captured
         self.logger.info(f"{short_name} parameters are : {self.params}")
-        return True
+        self.params[sigcalc_data_factory_key] = self.daf
+        return self.daf.apply_input_params(args=args)
