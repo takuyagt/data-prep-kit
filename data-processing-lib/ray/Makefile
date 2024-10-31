@@ -21,6 +21,10 @@ set-versions: .check-env
 		cat pyproject.toml | sed -e 's/"ray[default]==.*",/"ray[default]==$(RAY)",/' > tt.toml; \
 		mv tt.toml pyproject.toml; \
 	fi
+	if [ -e requirements.txt ]; then					\
+		cat requirements.txt | sed -e 's/ray[default]==.*/ray[default]==$(RAY)/' > tt.txt; \
+		mv tt.txt requirements.txt; \
+	fi
 
 
 build:: build-dist 
