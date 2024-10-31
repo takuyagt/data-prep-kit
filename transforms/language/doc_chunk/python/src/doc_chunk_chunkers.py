@@ -17,8 +17,7 @@ from docling_core.types.doc import DoclingDocument
 from llama_index.core.node_parser.text.token import TokenTextSplitter
 from llama_index.core import Document as LIDocument
 from llama_index.core.node_parser import MarkdownNodeParser
-from docling_core.transforms.chunker import HierarchicalChunker
-from docling_core.transforms.chunker.hierarchical_chunker import DocChunk
+from docling_core.transforms.chunker import HierarchicalChunker, DocMeta
 
 
 class ChunkingExecutor(metaclass=ABCMeta):
@@ -45,8 +44,8 @@ class DLJsonChunker(ChunkingExecutor):
     def chunk(self, content: str) -> Iterator[dict]:
         doc = DoclingDocument.model_validate_json(content)
         for chunk in self._chunker.chunk(doc):
-            chunk: DocChunk
-            doc_item = chunk.meta.doc_items[0]
+            meta = DocMeta.model_validate(chunk.meta)
+            doc_item = meta.doc_items[0]
             prov = doc_item.prov[0]
             yield {
                 self.output_chunk_column_name: chunk.text,
