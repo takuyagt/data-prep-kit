@@ -57,6 +57,20 @@ class TestPythonPdf2ParquetTransform(AbstractTransformLauncherTest):
             )
         )
 
+        # All input in a single parquet
+        fixtures.append(
+            (
+                launcher,
+                {
+                    **config,
+                    "pdf2parquet_batch_size": 10,
+                },
+                basedir + "/input",
+                basedir + "/expected_batch",
+                ignore_columns,
+            )
+        )
+
         # No table model and no OCR
         fixtures.append(
             (
