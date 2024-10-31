@@ -234,6 +234,11 @@ class DocChunkTransformConfiguration(TransformConfiguration):
             type=int,
             help="Number of tokens overlapping between chunks for the fixed-sized chunker.",
         )
+        parser.add_argument(
+            f"--{cli_prefix}dl_min_chunk_len",
+            default=None,
+            help="Deprecated. This option is no longer considered.",
+        )
 
     def apply_input_params(self, args: Namespace) -> bool:
         """
@@ -244,5 +249,7 @@ class DocChunkTransformConfiguration(TransformConfiguration):
         captured = CLIArgumentProvider.capture_parameters(args, cli_prefix, False)
 
         self.params = self.params | captured
+        if self.params.get("dl_min_chunk_len") is not None:
+            self.logger.warning("The `dl_min_chunk_len` option is deprecated and will be ignored. Please stop using it, it will not accepted anymore in future versions.")
         self.logger.info(f"doc_chunk parameters are : {self.params}")
         return True
