@@ -11,7 +11,7 @@ ARG DPK_WHEEL_FILE_NAME
 # Copy and install data processing libraries 
 # These are expected to be placed in the docker context before this is run (see the make image).
 COPY --chown=ray:users data-processing-dist data-processing-dist
-RUN  pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}[ray]
+RUN  pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}[ray,dev]
 
 COPY --chown=ray:users src/ src/
 COPY --chown=ray:users pyproject.toml pyproject.toml 
