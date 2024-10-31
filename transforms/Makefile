@@ -85,19 +85,19 @@ set-versions::
 
 set-pkg-version:
 	@# Help: Set tag for this package and its dependencies
-	cat pyproject.toml | sed -e 				\
-		's/^version[ ]*=.*/version = "'${TRANSFORMS_PKG_VERSION}'"/' 	\
-		> tt
-	mv tt pyproject.toml
-	echo $(DPK_VERSION)
-	cat requirements.txt |	sed -e \
-		's/data-prep-toolkit\([=><~][=]\).*/data-prep-toolkit\1$(DPK_VERSION)/' 	\
-	    > tt
-	mv tt requirements.txt
-	cat requirements-ray.txt |	sed -e	\
-		's/data-prep-toolkit\[ray\]\([=><~][=]\).*/data-prep-toolkit\[ray\]\1$(DPK_VERSION)/' 	\
-	    > tt
-	mv tt requirements-ray.txt
+	if [ -e pyproject.toml ]; then					\
+		cat pyproject.toml | sed -e 's/^version[ ]*=.*/version = "'${TRANSFORMS_PKG_VERSION}'"/' > tt; \
+		mv tt pyproject.toml; \
+	fi
+	#echo $(DPK_VERSION)
+	if [ -e requirements.txt ]; then					\
+		cat requirements.txt |	sed -e 's/data-prep-toolkit\([=><~][=]\).*/data-prep-toolkit\1$(DPK_VERSION)/' > tt; \
+		mv tt requirements.txt; \
+	fi
+	if [ -e requirements-ray.txt ]; then					\
+		cat requirements-ray.txt |	sed -e 's/data-prep-toolkit\[ray\]\([=><~][=]\).*/data-prep-toolkit\[ray\]\1$(DPK_VERSION)/' > tt; \
+		mv tt requirements-ray.txt; \
+	fi
 
 
 build-pkg-dist:
