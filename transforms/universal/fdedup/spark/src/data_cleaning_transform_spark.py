@@ -15,6 +15,8 @@ from typing import Any
 
 from data_cleaning_transform import (
     DataCleaningTransformConfiguration,
+    dataclean_data_access_key,
+    dataclean_data_factory_key,
     duplicate_list_location_default,
     duplicate_list_location_key,
 )
@@ -57,15 +59,23 @@ class DataCleaningSparkRuntime(DefaultSparkTransformRuntime):
         :return: dictionary of transform init params
         """
         data_access = data_access_factory.create_data_access()
+        dc_data_access = self.params.get(dataclean_data_access_key, None)
+        if dc_data_access is None:
+            dc_daf = self.params.get(dataclean_data_factory_key, None)
+            if dc_daf is None:
+                raise RuntimeError(f"Missing configuration value for key {dataclean_data_factory_key}")
+            dc_data_access = dc_daf.create_data_access()
+        if dc_data_access.output_folder is None:
+            dc_data_access.output_folder = data_access.output_folder
         duplicate_list_location = self.params.get(duplicate_list_location_key, duplicate_list_location_default)
         if not duplicate_list_location.startswith("/"):
-            out_paths = data_access.output_folder.rstrip("/").split("/")
+            out_paths = dc_data_access.output_folder.rstrip("/").split("/")
             dupl_list_paths = duplicate_list_location.split("/")
             paths = out_paths[:-1] + dupl_list_paths
             duplicate_list_location = "/".join([p.strip("/") for p in paths])
         if duplicate_list_location.startswith("s3://"):
             _, duplicate_list_location = duplicate_list_location.split("://")
-        self.duplicate_list, retries = data_access.get_file(duplicate_list_location)
+        self.duplicate_list, retries = dc_data_access.get_file(duplicate_list_location)
         return self.params | {"df": self.duplicate_list}
 
 

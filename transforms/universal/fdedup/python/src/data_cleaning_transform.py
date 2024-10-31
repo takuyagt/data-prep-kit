@@ -17,6 +17,7 @@ from typing import Any, List, Tuple
 import numpy as np
 import polars as pl
 import pyarrow as pa
+from data_processing.data_access import DataAccessFactory
 from data_processing.transform import AbstractTableTransform, TransformConfiguration
 from data_processing.utils import CLIArgumentProvider, ParamsUtils, get_logger
 
@@ -52,6 +53,9 @@ duplicate_list_location_default = os.path.join("docs_to_remove_consolidated", "d
 """ Default location of the list of duplicate documents marked for removal"""
 operation_mode_default = "filter_duplicates"
 """ Default value for operation mode, will filter out all the duplicate documents"""
+
+dataclean_data_factory_key = "dc_data_factory"
+dataclean_data_access_key = "dc_data_access"
 
 
 class DataCleaningTransform(AbstractTableTransform):
@@ -129,7 +133,9 @@ class DataCleaningTransformConfiguration(TransformConfiguration):
         super().__init__(
             name=short_name,
             transform_class=transform_class,
+            remove_from_metadata=[dataclean_data_factory_key],
         )
+        self.daf = DataAccessFactory(cli_arg_prefix="dcdata_")
         self.logger = get_logger(__name__, level="INFO")
 
     def add_input_params(self, parser: ArgumentParser) -> None:
@@ -157,6 +163,7 @@ class DataCleaningTransformConfiguration(TransformConfiguration):
             default=operation_mode_default,
             help="operation mode: filter out duplicates/non-duplicates, or annotate duplicate documents",
         )
+        self.daf.add_input_params(parser=parser)
 
     def apply_input_params(self, args: Namespace) -> bool:
         """
@@ -167,4 +174,5 @@ class DataCleaningTransformConfiguration(TransformConfiguration):
         captured = CLIArgumentProvider.capture_parameters(args, cli_prefix, False)
         self.params = self.params | captured
         self.logger.info(f"{short_name} parameters are : {self.params}")
-        return True
+        self.params[dataclean_data_factory_key] = self.daf
+        return self.daf.apply_input_params(args=args)
