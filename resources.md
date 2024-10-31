@@ -15,9 +15,15 @@
 
 ## Example Code
 
-## Tutorials / Blogs
+## Blogs / Tutorials
+
+- [**IBM Developer Blog**](https://developer.ibm.com/blogs/awb-unleash-potential-llms-data-prep-kit/) 
 
 ## Workshops
 
 - **2024-09-21: "RAG with Data Prep Kit" Workshop** @ Mountain View, CA, USA - [info](https://github.com/sujee/data-prep-kit-examples/blob/main/events/2024-09-21__RAG-workshop-data-riders.md)
+
+## Discord
+
+- [**Data Prep Kit Discord Channel**](https://discord.com/channels/1276554812359442504/1286046139921207476)
 
