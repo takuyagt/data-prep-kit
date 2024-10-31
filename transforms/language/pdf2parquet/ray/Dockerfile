@@ -33,7 +33,8 @@ RUN pip install ${PIP_INSTALL_EXTRA_ARGS} --no-cache-dir -e .
 # Download models
 RUN python -c 'from deepsearch_glm.utils.load_pretrained_models import load_pretrained_nlp_models; load_pretrained_nlp_models(verbose=True);'
 # RUN python -c 'from docling.document_converter import DocumentConverter; from pathlib import Path; DocumentConverter.download_models_hf(local_dir=Path("./artifacts/"));'
-RUN python -c 'from docling.document_converter import DocumentConverter; s=DocumentConverter.download_models_hf(); print(f"Models cached in {s}")'
+RUN python -c 'from docling.pipeline.standard_pdf_pipeline import StandardPdfPipeline; s=StandardPdfPipeline.download_models_hf(); print(f"Models cached in {s}")'
+
 
 # copy the main() entry point to the image
 COPY --chown=ray:users src/pdf2parquet_transform_ray.py ./
