@@ -10,6 +10,7 @@ authors = [
     { name = "Constantin Adam", email = "cmadam@us.ibm.com" },
 ]
 dependencies = [
+    "dpk_fdedup_transform_python==0.2.2.dev1",
     "data-prep-toolkit-ray==0.2.2.dev1",
     "mmh3>=4.1.0",
     "xxhash==3.4.1",

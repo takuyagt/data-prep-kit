@@ -1,5 +1,4 @@
-ARG BASE_IMAGE=docker.io/rayproject/ray:2.24.0-py310
-
+ARG BASE_IMAGE=docker.io/rayproject/ray:2.36.1-py310
 FROM ${BASE_IMAGE}
 
 USER ray
