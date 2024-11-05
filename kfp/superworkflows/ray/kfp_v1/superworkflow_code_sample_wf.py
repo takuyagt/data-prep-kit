@@ -50,7 +50,7 @@ tokenizer_image = "quay.io/dataprep1/data-prep-kit/tokenization-ray:latest"
 )
 def sample_code_ray_orchestrator(
     # the super pipeline parameters
-    p1_orch_code_to_parquet_name: str = "code_2_parquet_wf",
+    p1_orch_code_to_parquet_name: str = "code2parquet_wf",
     p1_orch_code_quality_name: str = "code_quality_wf",
     p1_orch_malware_name: str = "malware_wf",
     p1_orch_license_check_name: str = "license_check_wf",
@@ -61,16 +61,16 @@ def sample_code_ray_orchestrator(
     p1_orch_fuzzy_dedup_name: str = "fdedup_wf",
     p1_orch_tokenization_wf_name: str = "tokenization_wf",
     p2_pipeline_runtime_pipeline_id: str = "pipeline_id",
-    p2_pipeline_ray_head_options: str = '{"cpu": 1, "memory": 4, "image_pull_secret": ""}',
-    p2_pipeline_ray_worker_options: str = '{"replicas": 2, "max_replicas": 2, "min_replicas": 2, "cpu": 2, "memory": 4, "image_pull_secret": ""}',
+    p2_pipeline_ray_head_options: dict = {"cpu": 1, "memory": 4, "image_pull_secret": ""},
+    p2_pipeline_ray_worker_options: dict = {"replicas": 2, "max_replicas": 2, "min_replicas": 2, "cpu": 2, "memory": 4, "image_pull_secret": ""},
     p2_pipeline_server_url: str = "http://kuberay-apiserver-service.kuberay.svc.cluster.local:8888",
-    p2_pipeline_input_parent_path: str = "test/code2parquet/output/",
+    p2_pipeline_input_parent_path: str = "test/code2parquet/input/",
     p2_pipeline_output_parent_path: str = "test/super/output/",
     p2_pipeline_parent_path_suffix: str = "",
     p2_pipeline_additional_params: str = '{"wait_interval": 2, "wait_cluster_ready_tmout": 400, "wait_cluster_up_tmout": 300, "wait_job_ready_tmout": 400, "wait_print_tmout": 30, "http_retries": 5, "delete_cluster_delay_minutes": 0}',
     p2_pipeline_data_s3_access_secret: str = "s3-secret",
-    p2_pipeline_runtime_code_location: str = '{"github": "github", "commit_hash": "12345", "path": "path"}',
-    p2_pipeline_runtime_actor_options: str = '{"num_cpus": 0.8}',
+    p2_pipeline_runtime_code_location: dict = {'github': 'github', 'commit_hash': '12345', 'path': 'path'},
+    p2_pipeline_runtime_actor_options: dict = {'num_cpus': 0.8},
     p2_pipeline_data_max_files: int = -1,
     p2_pipeline_data_num_samples: int = -1,
     # code to parquet step parameters
