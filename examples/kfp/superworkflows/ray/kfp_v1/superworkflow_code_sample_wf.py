@@ -70,7 +70,7 @@ def sample_code_ray_orchestrator(
     p2_pipeline_additional_params: str = '{"wait_interval": 2, "wait_cluster_ready_tmout": 400, "wait_cluster_up_tmout": 300, "wait_job_ready_tmout": 400, "wait_print_tmout": 30, "http_retries": 5, "delete_cluster_delay_minutes": 0}',
     p2_pipeline_data_s3_access_secret: str = "s3-secret",
     p2_pipeline_runtime_code_location: dict = {'github': 'github', 'commit_hash': '12345', 'path': 'path'},
-    p2_pipeline_runtime_actor_options: dict = {'num_cpus': 0.8},
+    p2_pipeline_runtime_actor_options: dict = {'num_cpus': 0.7},
     p2_pipeline_data_max_files: int = -1,
     p2_pipeline_data_num_samples: int = -1,
     # code to parquet step parameters
