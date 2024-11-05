@@ -53,7 +53,7 @@ def sample_code_ray_orchestrator(
     p1_orch_code_to_parquet_name: str = "code2parquet_wf",
     p1_orch_code_quality_name: str = "code_quality_wf",
     p1_orch_malware_name: str = "malware_wf",
-    p1_orch_license_check_name: str = "license_check_wf",
+    p1_orch_license_check_name: str = "license_select_wf",
     p1_orch_header_cleanser_name: str = "header_cleanser_wf",
     p1_orch_proglang_select_name: str = "proglang_select_wf",
     p1_orch_doc_id_name: str = "doc_id_wf",
