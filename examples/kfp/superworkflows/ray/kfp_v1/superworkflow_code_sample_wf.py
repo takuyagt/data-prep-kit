@@ -23,7 +23,7 @@ component_spec_path = "../../../../../kfp/kfp_ray_components/"
 run_code_to_parquet_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
 run_code_quality_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
 run_malware_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
-run_license_check_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
+run_license_select_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
 run_header_cleanser_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
 run_proglang_select_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
 run_doc_id_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
@@ -35,7 +35,7 @@ code_to_parquet_image = "quay.io/dataprep1/data-prep-kit/code2parquet-ray:latest
 proglang_select_image = "quay.io/dataprep1/data-prep-kit/proglang_select-ray:latest"
 code_quality_image = "quay.io/dataprep1/data-prep-kit/code_quality-ray:latest"
 malware_image = "quay.io/dataprep1/data-prep-kit/malware-ray:latest"
-license_check_image = "quay.io/dataprep1/data-prep-kit/license_check-ray:latest"
+license_select_image = "quay.io/dataprep1/data-prep-kit/license_select-ray:latest"
 header_cleanser_image = "quay.io/dataprep1/data-prep-kit/header-cleanser-ray:latest"
 doc_id_image = "quay.io/dataprep1/data-prep-kit/doc_id-ray:latest"
 ededup_image = "quay.io/dataprep1/data-prep-kit/ededup-ray:latest"
@@ -53,7 +53,7 @@ def sample_code_ray_orchestrator(
     p1_orch_code_to_parquet_name: str = "code2parquet_wf",
     p1_orch_code_quality_name: str = "code_quality_wf",
     p1_orch_malware_name: str = "malware_wf",
-    p1_orch_license_check_name: str = "license_select_wf",
+    p1_orch_license_select_name: str = "license_select_wf",
     p1_orch_header_cleanser_name: str = "header_cleanser_wf",
     p1_orch_proglang_select_name: str = "proglang_select_wf",
     p1_orch_doc_id_name: str = "doc_id_wf",
@@ -186,16 +186,16 @@ def sample_code_ray_orchestrator(
     + malware_image
     + '"}}',
     # license check step parameters
-    p10_name: str = "license_check",
+    p10_name: str = "license_select",
     p10_skip: bool = False,
     p10_lc_license_column_name: str = "license",
-    p10_lc_licenses_file: str = "test/license_check/sample_approved_licenses.json",
+    p10_lc_licenses_file: str = "test/license_select/sample_approved_licenses.json",
     # orchestrator
     # overriding parameters
     p10_overriding_params: str = '{"ray_worker_options": {"image": "'
-    + license_check_image
+    + license_select_image
     + '"}, "ray_head_options": {"image": "'
-    + license_check_image
+    + license_select_image
     + '"}}',
     # header cleanser step parameters
     p11_name: str = "header_cleanser",
@@ -298,10 +298,10 @@ def sample_code_ray_orchestrator(
     _set_component(malware, "malware", code_quality)
 
     # license check
-    license_check = run_license_check_op(
-        name=p1_orch_license_check_name, prefix="p10_", params=args, host=orch_host, input_folder=malware.output
+    license_select = run_license_select_op(
+        name=p1_orch_license_select_name, prefix="p10_", params=args, host=orch_host, input_folder=malware.output
     )
-    _set_component(license_check, "license_check", malware)
+    _set_component(license_select, "license_select", malware)
 
     # header cleanser
     header_cleanser = run_header_cleanser_op(
@@ -309,9 +309,9 @@ def sample_code_ray_orchestrator(
         prefix="p11_",
         params=args,
         host=orch_host,
-        input_folder=license_check.output,
+        input_folder=license_select.output,
     )
-    _set_component(header_cleanser, "header_cleanser", license_check)
+    _set_component(header_cleanser, "header_cleanser", license_select)
 
     # tokenization
     tokenization = run_tokenization_op(
