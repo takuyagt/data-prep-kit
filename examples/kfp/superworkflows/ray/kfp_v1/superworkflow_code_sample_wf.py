@@ -19,7 +19,7 @@ from workflow_support.compile_utils import ONE_WEEK_SEC
 # empty comment to triigger pre-commit
 # Components
 # For every sub workflow we need a separate components, that knows about this subworkflow.
-component_spec_path = "../../../kfp_ray_components/"
+component_spec_path = "../../../../../kfp/kfp_ray_components/"
 run_code_to_parquet_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
 run_code_quality_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
 run_malware_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")

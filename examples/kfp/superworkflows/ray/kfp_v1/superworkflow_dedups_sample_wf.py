@@ -17,7 +17,7 @@ from workflow_support.compile_utils import ONE_WEEK_SEC
 
 # Components
 # path to kfp component specifications files
-component_spec_path = "../../../kfp_ray_components/"
+component_spec_path = "../../../../../kfp/kfp_ray_components/"
 # For every sub workflow we need a separate components, that knows about this subworkflow.
 run_doc_id_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
 run_exact_dedup_op = comp.load_component_from_file(component_spec_path + "executeSubWorkflowComponent.yaml")
