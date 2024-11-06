@@ -246,7 +246,7 @@ def sample_code_ray_orchestrator(
             op.after(prev_op)
 
     # code to parquet deduplication
-    code_to_parquet = run_exact_dedup_op(
+    code_to_parquet = run_code_quality_op(
         name=p1_orch_code_to_parquet_name,
         prefix="p3_",
         params=args,
