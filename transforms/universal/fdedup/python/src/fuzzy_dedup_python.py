@@ -57,6 +57,7 @@ ARGS_MAP = {
         signature_calc_transform.jaccard_similarity_threshold_key,
         signature_calc_transform.word_shingle_size_key,
         signature_calc_transform.num_segments_key,
+        signature_calc_transform.shingle_option_key,
     ],
     "cluster": [
         cluster_analysis_transform.jaccard_similarity_threshold_key,
@@ -239,6 +240,13 @@ def parse_args() -> argparse.Namespace:
         type=ast.literal_eval,
         default=None,
         help="ast string of options for s3 credentials",
+    )
+    parser.add_argument(
+        "--shingle_option",
+        type=str,
+        required=False,
+        default="word",
+        help="Option used for shingling",
     )
 
     return parser.parse_args()
