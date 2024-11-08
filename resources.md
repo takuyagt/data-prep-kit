@@ -12,6 +12,7 @@
 1. **"Building Successful LLM Apps: The Power of high quality data"** - [Video](https://www.youtube.com/watch?v=u_2uiZBBVIE)  |   [Slides](https://www.slideshare.net/slideshow/data_prep_techniques_challenges_methods-pdf-a190/271527890)
 2. **"Hands on session for fine tuning LLMs"** - [Video](https://www.youtube.com/watch?v=VEHIA3E64DM)
 3. **"Build your own data preparation module using data-prep-kit"** - [Video](https://www.youtube.com/watch?v=0WUMG6HIgMg)
+4. **"Data Prep Kit: A Comprehensive Cloud-Native Toolkit for Scalable Data Preparation in GenAI App"** - [Video](https://www.youtube.com/watch?v=WJ147TGULwo) | [Slides](https://ossaidevjapan24.sched.com/event/1jKBm)
 
 ## Example Code
 
