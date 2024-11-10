@@ -47,31 +47,10 @@ s3_creds = {
 }
 
 ARGS_MAP = {
-    "minhash": [
-        signature_calc_transform.contents_column_key,
-        signature_calc_transform.document_id_column_key,
-        signature_calc_transform.seed_key,
-        signature_calc_transform.num_permutations_key,
-        signature_calc_transform.num_bands_key,
-        signature_calc_transform.num_minhashes_per_band_key,
-        signature_calc_transform.jaccard_similarity_threshold_key,
-        signature_calc_transform.word_shingle_size_key,
-        signature_calc_transform.num_segments_key,
-    ],
-    "cluster": [
-        cluster_analysis_transform.jaccard_similarity_threshold_key,
-        cluster_analysis_transform.num_bands_key,
-        cluster_analysis_transform.num_segments_key,
-    ],
-    "fdlist": [
-        get_duplicate_list_transform.subfolder_key,
-        get_duplicate_list_transform.consolidated_filename_key,
-    ],
-    "fdclean": [
-        data_cleaning_transform.document_id_column_key,
-        data_cleaning_transform.duplicate_list_location_key,
-        data_cleaning_transform.operation_mode_key,
-    ],
+    "minhash": signature_calc_transform.captured_arg_keys,
+    "cluster": cluster_analysis_transform.captured_arg_keys,
+    "fdlist": get_duplicate_list_transform.captured_arg_keys,
+    "fdclean": data_cleaning_transform.captured_arg_keys,
 }
 
 
