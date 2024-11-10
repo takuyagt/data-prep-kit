@@ -12,14 +12,12 @@
 
 import os
 
-from data_processing.runtime.pure_python import PythonTransformLauncher
 from data_processing.test_support.launch.transform_test import (
     AbstractTransformLauncherTest,
 )
+from data_processing_ray.runtime.ray import RayTransformLauncher
 from get_duplicate_list_transform import sort_output_cli_param
-from get_duplicate_list_transform_python import (
-    GetDuplicateListPythonTransformConfiguration,
-)
+from get_duplicate_list_transform_ray import GetDuplicateListRayTransformConfiguration
 
 
 class TestPythonGetDuplicateListTransform(AbstractTransformLauncherTest):
@@ -31,9 +29,10 @@ class TestPythonGetDuplicateListTransform(AbstractTransformLauncherTest):
     def get_test_transform_fixtures(self) -> list[tuple]:
         basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../test-data"))
         config = {
+            "run_locally": True,
             sort_output_cli_param: True,
         }
-        launcher = PythonTransformLauncher(GetDuplicateListPythonTransformConfiguration())
+        launcher = RayTransformLauncher(GetDuplicateListRayTransformConfiguration())
         fixtures = [
             (
                 launcher,
