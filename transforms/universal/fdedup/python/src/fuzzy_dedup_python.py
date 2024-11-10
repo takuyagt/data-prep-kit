@@ -219,6 +219,13 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="ast string of options for s3 credentials",
     )
+    parser.add_argument(
+        "--shingle_option",
+        type=str,
+        required=False,
+        default="word",
+        help="Option used for shingling",
+    )
 
     return parser.parse_args()
 

@@ -48,6 +48,8 @@ word_shingle_size_key = "word_shingle_size"
 """ This key holds the size of the word shingles calculated for each document"""
 num_segments_key = "num_segments"
 """ This key holds the number of segments across which we divide the hashing space for each band"""
+shingle_option_key = "shingle_option"
+""" This key holds the option that is used to do shingles calculation for each document"""
 
 # command line arguments
 document_id_column_cli_param = f"{cli_prefix}{document_id_column_key}"
@@ -68,6 +70,8 @@ word_shingle_size_cli_param = f"{cli_prefix}{word_shingle_size_key}"
 """ The size of the word shingles calculated for each document"""
 num_segments_cli_param = f"{cli_prefix}{num_segments_key}"
 """ The number of segments across which we divide the hashing space for each band"""
+shingle_option_cli_param = f"{cli_prefix}{shingle_option_key}"
+""" This key holds the option that is used to do shingles calculation for each document"""
 
 captured_arg_keys = [
     document_id_column_key,
@@ -100,6 +104,8 @@ jaccard_similarity_threshold_default = 0.75
 """ Default Jaccard similarity threshold (from FineWeb https://arxiv.org/pdf/2406.17557)"""
 num_segments_default = 1
 """ Default number of segments across which we divide the hashing space for each band"""
+shingle_option_default = "word"
+""" Default option of doing shingling"""
 
 
 sigcalc_data_factory_key = "sc_data_factory"
@@ -162,6 +168,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
         self.num_segments = config.get(num_segments_key, num_segments_default)
         self.num_bands = config.get(num_bands_key, num_bands_default)
         self.num_rows = config.get(num_minhashes_per_band_key, num_minhashes_per_band_default)
+        self.shingle_option = config.get(shingle_option_key, shingle_option_default)
         # use this dataframe to store the minhashes and size for each document
         self.all_minhashes: pl.DataFrame = None
         # use this dataframe to store the band hashes for each document
@@ -202,7 +209,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
         # generate minhash values
         minhashes = df.map_rows(
             lambda row: mm_min_hash.minhash2_nosalt(
-                *self._generate_word_shingles(row, window_size=self.word_shingle_size)
+                *self._generate_word_shingles(row, self.shingle_option, window_size=self.word_shingle_size)
             )
         )
         # rename columns, cast minhashes to list(uint32)
@@ -353,7 +360,9 @@ class SignatureCalculationTransform(AbstractTableTransform):
         return [], metadata
 
     # define shingles generation function
-    def _generate_word_shingles(self, row: tuple, window_size: int = 5, delimiter: str = " ") -> tuple[list, int, int]:
+    def _generate_word_shingles(
+        self, row: tuple, shingling_option: str, window_size: int = 5, delimiter: str = " "
+    ) -> tuple[list, int, int]:
         text = row[0]
         # lower case
         text = text.lower()
@@ -366,7 +375,12 @@ class SignatureCalculationTransform(AbstractTableTransform):
         # diacritics/unicode normalization
         text = "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn")
         text = text.strip()
-        words = text.split()
+        print(shingling_option)
+        print("=============")
+        if shingling_option == "char":
+            words = list(text)
+        else:
+            words = text.split()
         document_id = row[1]
         doc_len = len(row[0])
         word_count = len(words)
@@ -483,6 +497,12 @@ class SignatureCalculationTransformConfiguration(TransformConfiguration):
             type=int,
             default=num_segments_default,
             help="the number of segments across which we divide the hashing space for each band",
+        )
+        parser.add_argument(
+            f"--{shingle_option_cli_param}",
+            type=str,
+            default=shingle_option_default,
+            help="Shingling option",
         )
         self.daf.add_input_params(parser=parser)
 
