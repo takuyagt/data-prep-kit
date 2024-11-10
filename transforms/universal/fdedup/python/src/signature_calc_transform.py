@@ -456,7 +456,7 @@ class SignatureCalculationTransformConfiguration(TransformConfiguration):
         )
         parser.add_argument(
             f"--{jaccard_similarity_threshold_cli_param}",
-            type=int,
+            type=float,
             default=jaccard_similarity_threshold_default,
             help="Jaccard similarity threshold above which two documents are duplicates",
         )
