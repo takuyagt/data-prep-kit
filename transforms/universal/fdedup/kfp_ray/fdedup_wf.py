@@ -150,6 +150,7 @@ def fuzzydedup(
     fdedup_num_bands: int = 14,
     fdedup_num_minhashes_per_band: int = 8,
     fdedup_word_shingle_size: int = 5,
+    fdedup_shingle_option: str = "word",
     fdedup_jaccard_similarity_threshold: float = 0.75,
     fdedup_seed: int = 42,
     fdedup_docs_to_remove_folder: str = "docs_to_remove",
@@ -202,6 +203,7 @@ def fuzzydedup(
     :param fdedup_num_bands - number of bands
     :param fdedup_num_minhashes_per_band - length of a band
     :param fdedup_word_shingle_size - length of word shingles
+    :param fdedup_shingle_option - type of shingle, one of 'word', or 'char'
     :param fdedup_jaccard_similarity_threshold - similarity threshold
     :param fdedup_seed - seed for the random number generator
     :param fdedup_docs_to_remove_folder - name of the subfolder holding the duplicate doc ids
@@ -258,6 +260,7 @@ def fuzzydedup(
             num_bands=fdedup_num_bands,
             num_minhashes_per_band=fdedup_num_minhashes_per_band,
             word_shingle_size=fdedup_word_shingle_size,
+            shingle_option=fdedup_shingle_option,
             threshold=fdedup_jaccard_similarity_threshold,
             num_segments=fdedup_num_segments,
             seed=fdedup_seed,

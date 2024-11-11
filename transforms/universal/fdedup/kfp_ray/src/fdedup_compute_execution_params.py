@@ -93,6 +93,7 @@ def signature_calc_compute_execution_params(
     num_bands: int,  # number of bands
     num_minhashes_per_band: int,  # band length
     word_shingle_size: int,  # number of words in shingle
+    shingle_option: str,  # type of shingle, one of 'word' or 'char'
     threshold: float,  # threshold,
     num_segments: int,  # number of segments
     seed: int,  # seed for the random number generator
@@ -114,6 +115,7 @@ def signature_calc_compute_execution_params(
     :param num_bands: number of bands
     :param num_minhashes_per_band: band length
     :param word_shingle_size: number of words in shingle
+    :param shingle_option: str: type of shingle, one of 'word' or 'char'
     :param threshold: threshold,
     :param num_segments: number of segments
     :param seed: seed for the random number generator
@@ -138,6 +140,7 @@ def signature_calc_compute_execution_params(
         "minhash_num_bands": num_bands,
         "minhash_num_minhashes_per_band": num_minhashes_per_band,
         "minhash_word_shingle_size": word_shingle_size,
+        "minhash_shingle_option": shingle_option,
         "minhash_jaccard_similarity_threshold": threshold,
         "minhash_num_segments": num_segments,
         "minhash_seed": seed,
