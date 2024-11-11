@@ -38,20 +38,20 @@ class Web2ParquetTransform(AbstractTableTransform):
         """
         # Make sure that the param name corresponds to the name used in apply_input_params method
         # of NOOPTransformConfiguration class
-        super().__init__(kwargs)
+        super().__init__(dict(kwargs))
         self.seed_urls = kwargs.get("urls", [])
         self.depth = kwargs.get("depth", 1)
         self.downloads = kwargs.get("downloads", 10)
         self.allow_mime_types = kwargs.get("mime_types", ["application/pdf","text/html","text/markdown","text/plain"])
-
+        self.output_folder=kwargs.get('putput_folder', None)
         assert self.seed_urls.length, "Must specify a URL to crawl. Url cannot be None"
         
         self.count = 0
         self.docs = []
-        # create a data access object for storing files locally
+        # create a data access object for storing files
         self.dao = None 
 
-     def on_download(self, url: str, body: bytes, headers: dict) -> None:
+    def on_download(self, url: str, body: bytes, headers: dict) -> None:
         """
         Callback function called when a page has been downloaded.
         You have access to the request URL, response body and headers.
@@ -64,11 +64,6 @@ class Web2ParquetTransform(AbstractTableTransform):
         doc['filename'], doc['content_type'] = get_file_info(headers)
         doc['content'] = body
         self.docs.append(doc)
-        try:
-            if self.dao:
-                self.dao.sav()
-        except:
-            pass
 
     def transform(self, table: pa.Table=None, file_name: str = None) -> tuple[list[pa.Table], dict[str, Any]]:
         """
@@ -97,6 +92,7 @@ class Web2ParquetTransform(AbstractTableTransform):
             }
         logger.info(f"Crawling is completed in {end_time - start_time:.2f} seconds") 
         logger.info(f"{metadata = }")
+            
         return [table], metadata
 
 

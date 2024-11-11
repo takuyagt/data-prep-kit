@@ -1,0 +1,61 @@
+# Define the root of the local git clone for the common rules to be able 
+# know where they are running from.
+
+# Set this, before including .make.defaults, to 
+#   1 if requirements reference the latest code in the data processing library 
+#     in this repo (that is not yet published to pypi).	 This is the default setting.
+#   0 if the transforms DPK dependencies are on wheels published to 
+#     pypi (e.g. data-prep-toolkit=0.2.1)
+#USE_REPO_LIB_SRC=1
+
+# Include a library of common .transform.* targets which most
+# transforms should be able to reuse.  However, feel free
+# to override/redefine the rules below. 
+include $(REPOROOT)/transforms/.make.transforms
+
+######################################################################
+## Default setting for TRANSFORM_RUNTIME uses folder name-- Old layout
+TRANSFORM_RUNTIME=ray
+TRANSFORM_RUNTIME_SRC_FILE=-m dpk_$(TRANSFORM_NAME).$(TRANSFORM_RUNTIME).transform
+
+venv::	.transforms.ray-venv
+
+test:: .transforms.test-src test-image
+
+clean:: .transforms.clean
+
+#image:: .transforms.ray-image
+
+test-src:: .transforms.test-src
+
+setup:: .transforms.setup
+
+publish:: publish-image
+
+publish-image:: .transforms.publish-image-ray
+        
+test-image:: image .transforms.test-image-help .defaults.test-image-pytest .transforms.clean
+
+set-versions::
+
+build-lib-wheel:
+	make -C $(REPOROOT)/data-processing-lib build-pkg-dist
+
+image:: build-lib-wheel
+	@$(eval LIB_WHEEL_FILE := $(shell find $(REPOROOT)/data-processing-lib/dist/*.whl))
+	rm -fr dist && mv $(REPOROOT)/data-processing-lib/dist .
+	$(eval WHEEL_FILE_NAME := $(shell basename $(LIB_WHEEL_FILE)))
+	$(DOCKER) build -t $(DOCKER_IMAGE_NAME) $(DOCKER_BUILD_EXTRA_ARGS)	\
+		--platform $(DOCKER_PLATFORM)  			\
+		--build-arg EXTRA_INDEX_URL=$(EXTRA_INDEX_URL)	\
+		--build-arg BASE_IMAGE=$(RAY_BASE_IMAGE)  		\
+		--build-arg BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')  	\
+		--build-arg WHEEL_FILE_NAME=$(WHEEL_FILE_NAME) \
+		--build-arg TRANSFORM_NAME=$(TRANSFORM_NAME) \
+		--build-arg GIT_COMMIT=$(shell git log -1 --format=%h) .
+	$(DOCKER) tag $(DOCKER_LOCAL_IMAGE)  $(DOCKER_REMOTE_IMAGE)
+	rm -fr dist
+
+publish:: publish-image
+
+
