@@ -44,6 +44,7 @@ operation_mode_cli_param = f"{cli_prefix}{operation_mode_key}"
 captured_arg_keys = [
     document_id_column_key,
     duplicate_list_location_key,
+    operation_mode_key,
 ]
 
 # defaults

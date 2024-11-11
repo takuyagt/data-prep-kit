@@ -71,7 +71,7 @@ word_shingle_size_cli_param = f"{cli_prefix}{word_shingle_size_key}"
 num_segments_cli_param = f"{cli_prefix}{num_segments_key}"
 """ The number of segments across which we divide the hashing space for each band"""
 shingle_option_cli_param = f"{cli_prefix}{shingle_option_key}"
-""" This key holds the option that is used to do shingles calculation for each document"""
+""" The option (word/char) used to do shingles calculation for each document"""
 
 captured_arg_keys = [
     document_id_column_key,
@@ -83,6 +83,7 @@ captured_arg_keys = [
     jaccard_similarity_threshold_key,
     word_shingle_size_key,
     num_segments_key,
+    shingle_option_key,
 ]
 
 # defaults
@@ -375,8 +376,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
         # diacritics/unicode normalization
         text = "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn")
         text = text.strip()
-        print(shingling_option)
-        print("=============")
+        self.logger.debug(shingling_option)
         if shingling_option == "char":
             words = list(text)
         else:
