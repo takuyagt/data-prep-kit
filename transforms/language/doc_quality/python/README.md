@@ -6,12 +6,12 @@ for details on general project conventions, transform configuration,
 testing and IDE set up.
 
 ## Description 
-This transform will calculate and annotate several metrics related to document, which are usuful to see the quality of document.
-Text is the type of data this transform operates on.
+This transform will calculate and annotate several metrics which are useful to assess the quality of the document.
+The document quality transform operates on text documents only
 
 ### Input 
 
-| input column name | data type | descrition |
+| input column name | data type | description |
 |-|-|-|
 | the one specified in _doc_content_column_ configuration | string | text whose quality will be calculated by this transform |
 
