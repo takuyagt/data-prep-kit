@@ -39,6 +39,9 @@ test-image:: image .transforms.test-image-help .defaults.test-image-pytest .tran
 
 set-versions::
 
+## We need to think how we want to do this going forward 
+build::
+
 build-lib-wheel:
 	make -C $(REPOROOT)/data-processing-lib build-pkg-dist
 
