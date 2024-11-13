@@ -238,7 +238,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
         num_pages = len(doc.pages)
         num_tables = len(doc.tables)
         num_doc_elements = len(doc.texts)
-        document_hash = np.uint64(doc.origin.binary_hash)
+        document_hash = str(doc.origin.binary_hash)  # we turn the uint64 hash into str, because it is easier to handle for pyarrow
 
         self._update_metrics(num_pages=num_pages, elapse_time=elapse_time)
 
