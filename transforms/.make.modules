@@ -19,6 +19,7 @@ TRANSFORM_RUNTIME=ray
 TRANSFORM_RUNTIME_SRC_FILE=-m dpk_$(TRANSFORM_NAME).$(TRANSFORM_RUNTIME).transform
 
 venv::	.transforms.ray-venv
+	source venv/bin/activate && $(PYTHON) -m pip install $(REPOROOT)/data-connector-lib
 
 test:: .transforms.test-src test-image
 

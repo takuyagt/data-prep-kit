@@ -1,21 +1,15 @@
 from datetime import datetime
 
-def get_file_info(headers, url=None):
+def get_file_info(headers, url):
     # Extract file size
     file_size = int(headers.get('Content-Length', 0))  # Default to 0 if not found
-
-    # Extract filename from Content-Disposition
+    content_type = headers.get('Content-Type')
     try:
-        filename = headers.get('Content-Disposition').split('filename=')[-1].strip().strip('"')
+        filename = headers.get('Content-Disposition').split('filename=')[1].strip().strip('"')
     except:
-        filename = None
+        url_split=url.split('/')
+        filename = url_split[-1] if not url.endswith('/') else url_split[-2]
+        filename = filename.replace('.','_')+"-"+content_type.replace("/", ".")
 
-    # try to find the file name from
-    if not filename:
-        try:
-            parts = url.split('/')
-            filename = parts[-1]
-        except:
-            filename= url
-    return filename, headers.get('Content-Type') 
+    return filename, content_type, file_size
 

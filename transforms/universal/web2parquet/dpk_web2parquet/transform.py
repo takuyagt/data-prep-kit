@@ -11,59 +11,76 @@
 ################################################################################
 
 import time
-from argparse import ArgumentParser, Namespace
 from typing import Any
 
 import pyarrow as pa
+from data_processing.data_access import DataAccessLocal
 from data_processing.transform import AbstractTableTransform
-from dpk_web2parquet.utils import get_file_info
-
+from data_processing.utils import get_logger
 from dpk_connector import crawl, shutdown
+
 
 user_agent = "Mozilla/5.0 (X11; Linux i686; rv:125.0) Gecko/20100101 Firefox/125.0"
 
-logger = get_logger(__name__)
+logger = get_logger(__name__,"DEBUG")
 
 class Web2ParquetTransform(AbstractTableTransform):
     """
-    Implements a simple copy of a pyarrow Table.
+    Crawl the web and load content to pyarrow Table.
     """
 
-    def __init__(self, **kwargs):
+
+    def __init__(self, config: dict[str, Any]):
         """
         Initialize based on the dictionary of configuration information.
-        This is generally called with configuration parsed from the CLI arguments defined
-        by the companion runtime, NOOPTransformRuntime.  If running inside the RayMutatingDriver,
-        these will be provided by that class with help from the RayMutatingDriver.
+        example: 
+            kwargs = {'urls': ['https://thealliance.ai/'],'depth':  1,'downloads': 1}
+            Web2ParquetTransform(**kwargs)
+        or
+            Web2ParquetTransform(urls=['https://thealliance.ai/'], depth=1, downloads=1)
         """
         # Make sure that the param name corresponds to the name used in apply_input_params method
         # of NOOPTransformConfiguration class
-        super().__init__(dict(kwargs))
-        self.seed_urls = kwargs.get("urls", [])
-        self.depth = kwargs.get("depth", 1)
-        self.downloads = kwargs.get("downloads", 10)
-        self.allow_mime_types = kwargs.get("mime_types", ["application/pdf","text/html","text/markdown","text/plain"])
-        self.output_folder=kwargs.get('putput_folder', None)
-        assert self.seed_urls.length, "Must specify a URL to crawl. Url cannot be None"
-        
+        logger.debug(f"Received configuration: {config}")
+        super().__init__(config)
+        self.seed_urls = config.get("urls", [])
+        self.depth = config.get("depth", 1)
+        self.downloads = config.get("downloads", 10)
+        self.allow_mime_types = config.get("mime_types", ["application/pdf","text/html","text/markdown","text/plain"])
+        self.folder=config.get('folder', None)
+        assert self.seed_urls, "Must specify a list of URLs to crawl. Url cannot be None"
+
+        ## users may be tempted to provide a single URLs, we still need to put it in a list of 1
+        if type(self.seed_urls) is not list:
+            self.seed_urls=[self.seed_urls]
+
         self.count = 0
         self.docs = []
-        # create a data access object for storing files
-        self.dao = None 
 
     def on_download(self, url: str, body: bytes, headers: dict) -> None:
         """
         Callback function called when a page has been downloaded.
         You have access to the request URL, response body and headers.
         """
-        logger.debug(f"url: {url}, headers: {headers}, body: {body[:64]}")
-        self.count += 1
-        file_info = parse_headers(headers=headers, url=url)
-        doc = headers
+        doc={}
         doc['url'] = url
-        doc['filename'], doc['content_type'] = get_file_info(headers)
-        doc['content'] = body
-        self.docs.append(doc)
+#        doc['file_size'] = int(headers.get('Content-Length', 0))  # Default to 0 if not found  
+        doc['content_type']=headers.get('Content-Type')
+        try:
+            filename = headers.get('Content-Disposition').split('filename=')[1].strip().strip('"')
+        except:
+            url_split=url.split('/')
+            filename = url_split[-1] if not url.endswith('/') else url_split[-2]
+            filename = filename.replace('.','_')+"-"+doc['content_type'].split(';')[0].replace("/", ".")
+        doc['filename']=filename
+        doc['contents'] = body
+        
+        logger.debug(f"url: {doc['url']}, filename: {doc['filename']}, content_type: {doc['content_type']}")
+
+        ## Enforce download limits
+        if len(self.docs) < self.downloads:
+            self.docs.append(doc)
+
 
     def transform(self, table: pa.Table=None, file_name: str = None) -> tuple[list[pa.Table], dict[str, Any]]:
         """
@@ -78,22 +95,43 @@ class Web2ParquetTransform(AbstractTableTransform):
             self.on_download,
             user_agent=user_agent,
             depth_limit=self.depth,
+            download_limit=self.downloads,
             allow_mime_types=self.allow_mime_types
         )  # blocking call
+
         # Shutdown all crawls
-        shutdown()
+        # Check with @Matsubara-san as this is preventing us from calling the transfrom method a second time.
+    #    shutdown()
 
         end_time = time.time()      
+#        logger.debug(f"Way After: {self.docs}")
         table = pa.Table.from_pylist(self.docs)
         metadata = {
-            "count": self.count,
-            "start time": start_time,
-            "end time": end_time
+            "count": len(self.docs),
+            "requested_seeds": len(self.seed_urls),
+            "requested_depth": self.depth,
+            "requested_downloads": self. downloads,
             }
         logger.info(f"Crawling is completed in {end_time - start_time:.2f} seconds") 
         logger.info(f"{metadata = }")
+
+        #############################################################################
+        ## The same transform can also be used to store crawled files to local folder
+        if self.folder:
+            dao=DataAccessLocal(local_config={'output_folder':self.folder,'input_folder':'.'})
+            for x in self.docs:
+                dao.save_file(self.folder+'/'+x['filename'], x['contents'])
             
         return [table], metadata
+    
+    
 
 
+class Web2Parquet(Web2ParquetTransform):
+    """
+    Crawl the web and load content to pyarrow Table.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(dict(kwargs))
 
