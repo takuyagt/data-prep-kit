@@ -10,7 +10,7 @@ asttokens==2.4.1
 attrs==23.2.0
 blinker==1.8.2
 cachetools==5.3.3
-certifi==2024.6.2
+certifi==2024.7.4
 charset-normalizer==3.3.2
 click==8.1.7
 comm==0.2.2
@@ -83,7 +83,7 @@ streamlit==1.37.0
 tenacity==8.4.2
 toml==0.10.2
 toolz==0.12.1
-tornado==6.4
+tornado==6.4.1
 traitlets==5.14.3
 tree-sitter==0.21.3
 tree-sitter-cpp==0.22.1

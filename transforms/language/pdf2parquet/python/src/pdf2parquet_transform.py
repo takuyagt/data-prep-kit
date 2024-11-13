@@ -24,6 +24,7 @@ from typing import Any, Optional
 import filetype
 import pandas as pd
 import pyarrow as pa
+import numpy as np
 from data_processing.transform import AbstractBinaryTransform, TransformConfiguration
 from data_processing.utils import TransformUtils, get_logger, str2bool
 from data_processing.utils.cli_utils import CLIArgumentProvider
@@ -237,7 +238,7 @@ class Pdf2ParquetTransform(AbstractBinaryTransform):
         num_pages = len(doc.pages)
         num_tables = len(doc.tables)
         num_doc_elements = len(doc.texts)
-        document_hash = doc.origin.binary_hash
+        document_hash = str(doc.origin.binary_hash)  # we turn the uint64 hash into str, because it is easier to handle for pyarrow
 
         self._update_metrics(num_pages=num_pages, elapse_time=elapse_time)
 
