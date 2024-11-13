@@ -36,7 +36,7 @@ publish: publish-image
 publish-image:: .transforms.publish-image-spark
 
 set-versions:
-	$(MAKE) TRANSFORM_PYTHON_VERSION=dummy TOML_VERSION=$(FDEDUP_SPARK_VERSION) .transforms.set-versions
+	$(MAKE) TRANSFORM_PYTHON_VERSION=$(FDEDUP_PYTHON_VERSION) TOML_VERSION=$(FDEDUP_SPARK_VERSION) .transforms.set-versions
         
 build-dist:: .defaults.build-dist 
 

@@ -14,3 +14,5 @@ venv:	requirements.txt
 		$(PIP) install --upgrade pip;		\
 		$(PIP) install -r requirements.txt;	\
 	fi					
+set-versions:
+	@:
