@@ -1,4 +1,15 @@
-# Ingest PDF to Parquet
+# Ingest PDF to Parquet Transform
+
+Please see the set of
+[transform project conventions](../../../README.md#transform-project-conventions)
+for details on general project conventions, transform configuration,
+testing and IDE set up.
+
+## Contributors
+
+- Michele Dolfi (dol@zurich.ibm.com)
+
+## Description 
 
 This tranforms iterate through document files or zip of files and generates parquet files
 containing the converted document in Markdown or JSON format.
@@ -6,6 +17,9 @@ containing the converted document in Markdown or JSON format.
 The PDF conversion is using the [Docling package](https://github.com/DS4SD/docling).
 The Docling configuration in DPK is tuned for best results when running large batch ingestions.
 For more details on the multiple configuration options, please refer to the official [Docling documentation](https://ds4sd.github.io/docling/).
+
+
+### Input files
 
 This transform supports the following input formats:
 
@@ -17,32 +31,33 @@ This transform supports the following input formats:
 - Markdown documents
 - ASCII Docs documents
 
-
-## Output format
-
-The output format will contain all the columns of the metadata CSV file,
-with the addition of the following columns
-
-```jsonc
-{
-    "source_filename": "string",  // the basename of the source archive or file
-    "filename": "string",         // the basename of the PDF file
-    "contents": "string",         // the content of the PDF
-    "document_id": "string",      // the document id, a random uuid4 
-    "document_hash": "string",    // the document hash of the input content 
-    "ext": "string",              // the detected file extension
-    "hash": "string",             // the hash of the `contents` column
-    "size": "string",             // the size of `contents`
-    "date_acquired": "date",      // the date when the transform was executing
-    "num_pages": "number",        // number of pages in the PDF
-    "num_tables": "number",       // number of tables in the PDF
-    "num_doc_elements": "number", // number of document elements in the PDF
-    "pdf_convert_time": "float",  // time taken to convert the document in seconds
-}
-```
+The input documents can be provided in a folder structure, or as a zip archive.
+Please see the configuration section for specifying the input files.
 
 
-## Parameters
+### Output format
+
+The output table will contain following columns
+
+| output column name | data type | description |
+|-|-|-|
+| source_filename | string | the basename of the source archive or file |
+| filename | string | the basename of the PDF file |
+| contents | string | the content of the PDF |
+| document_id | string | the document id, a random uuid4  |
+| document_hash | string | the document hash of the input content |
+| ext | string | the detected file extension |
+| hash | string | the hash of the `contents` column |
+| size | string | the size of `contents` |
+| date_acquired | date | the date when the transform was executing |
+| num_pages | number | number of pages in the PDF |
+| num_tables | number | number of tables in the PDF |
+| num_doc_elements | number | number of document elements in the PDF |
+| pdf_convert_time | float | time taken to convert the document in seconds |
+
+
+
+## Configuration
 
 The transform can be initialized with the following parameters.
 
@@ -58,7 +73,65 @@ The transform can be initialized with the following parameters.
 | `pdf_backend`                | `dlparse_v2`  | The PDF backend to use. Valid values are `dlparse_v2`, `dlparse_v1`, `pypdfium2`. |
 | `double_precision`           | `8`           | If set, all floating points (e.g. bounding boxes) are rounded to this precision. For tests it is advised to use 0. |
 
+
+Example
+
+```py
+{
+    "contents_type": "application/json",
+    "do_ocr": True,
+}
+```
+
+## Usage
+
+### Launched Command Line Options 
+
 When invoking the CLI, the parameters must be set as `--pdf2parquet_<name>`, e.g. `--pdf2parquet_do_ocr=true`.
+
+
+### Running the samples
+To run the samples, use the following `make` targets
+
+* `run-cli-sample` - runs src/pdf2parquet_transform_python.py using command line args
+* `run-local-sample` - runs src/pdf2parquet_local.py
+* `run-local-python-sample` - runs src/pdf2parquet_local_python.py
+
+These targets will activate the virtual environment and set up any configuration needed.
+Use the `-n` option of `make` to see the detail of what is done to run the sample.
+
+For example, 
+```shell
+make run-local-python-sample
+...
+```
+Then 
+```shell
+ls output
+```
+To see results of the transform.
+
+
+### Code example
+
+TBD (link to the notebook will be provided)
+
+See the sample script [src/pdf2parquet_local_python.py](src/pdf2parquet_local_python.py).
+
+
+### Transforming data using the transform image
+
+To use the transform image to transform your data, please refer to the 
+[running images quickstart](../../../../doc/quick-start/run-transform-image.md),
+substituting the name of this transform image and runtime as appropriate.
+
+## Testing
+
+Following [the testing strategy of data-processing-lib](../../../../data-processing-lib/doc/transform-testing.md)
+
+Currently we have:
+- [Unit test](transforms/language/pdf2parquet/python/test/test_pdf2parquet_python.py)
+- [Integration test](transforms/language/pdf2parquet/python/test/test_pdf2parquet.py)
 
 
 ## Credits
