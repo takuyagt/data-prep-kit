@@ -5,6 +5,10 @@ Please see the set of
 for details on general project conventions, transform configuration,
 testing and IDE set up.
 
+## Contributors
+
+- Daiki Tsuzuku (dtsuzuku@jp.ibm.com)
+
 ## Description 
 This transform will calculate and annotate several metrics which are useful to assess the quality of the document.
 The document quality transform operates on text documents only
