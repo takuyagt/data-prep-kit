@@ -1,3 +1,15 @@
+# (C) Copyright IBM Corp. 2024.
+# Licensed under the Apache License, Version 2.0 (the “License”);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#  http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an “AS IS” BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+
 import abc
 import datetime
 import fcntl
@@ -59,9 +71,10 @@ class MultiLock(abc.ABC):
 
         start = time.time()
         if block:
-            locked = self.thread_lock.acquire(block, timeout)
+            thread_timeout = timeout if timeout is not None and timeout >= 0 else -1
+            locked = self.thread_lock.acquire(blocking=True, timeout=thread_timeout)
         else:
-            locked = self.thread_lock.acquire(block)
+            locked = self.thread_lock.acquire(blocking=False)
         if not locked:
             return False
         end = time.time()
@@ -109,8 +122,9 @@ class MultiLock(abc.ABC):
         """
         if self.fd is not None:
             self.thread_lock.acquire()
-            os.close(self.fd)
-            self.fd = None
+            if self.fd is not None: # Retest now that we have the thread lock.
+                os.close(self.fd)
+                self.fd = None
             self.thread_lock.release()
 
     def is_locked(self):

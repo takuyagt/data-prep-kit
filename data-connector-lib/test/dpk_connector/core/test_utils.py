@@ -1,3 +1,15 @@
+# (C) Copyright IBM Corp. 2024.
+# Licensed under the Apache License, Version 2.0 (the “License”);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#  http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an “AS IS” BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+################################################################################
+
 # Assisted by WCA@IBM
 # Latest GenAI contribution: ibm/granite-20b-code-instruct-v2
 
@@ -7,6 +19,7 @@ from dpk_connector.core.utils import (
     get_content_type,
     get_etld1,
     get_focus_path,
+    get_fqdn,
     get_header_value,
     get_mime_type,
     is_allowed_path,
@@ -19,9 +32,7 @@ from scrapy.http import Request, Response
 
 
 def test_get_header_value():
-    response = Response(
-        "http://example.com", headers={"Content-Type": "application/json"}
-    )
+    response = Response("http://example.com", headers={"Content-Type": "application/json"})
     assert get_header_value(response, "Content-Type") == "application/json"
 
 
@@ -81,6 +92,21 @@ def test_get_base_url():
 )
 def test_get_etld1(url: str, expected: str):
     assert get_etld1(url) == expected
+
+
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        ("http://www.example.com", "www.example.com"),
+        ("https://www.example.co.uk", "www.example.co.uk"),
+        ("http://www.example.com/path?query=string#fragment", "www.example.com"),
+        ("http://localhost:8080/", ""),
+        ("http://www.example.com:8080/", "www.example.com"),
+        ("http://www.sub.example.com:8080/", "www.sub.example.com"),
+    ],
+)
+def test_get_fqdn(url: str, expected: str):
+    assert get_fqdn(url) == expected
 
 
 @pytest.mark.parametrize(
