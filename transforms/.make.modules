@@ -25,27 +25,54 @@ test:: .transforms.test-src test-image
 
 clean:: .transforms.clean
 
-#image:: .transforms.ray-image
+## We need to think how we want to do this going forward
+set-versions::
+
+## We need to think how we want to do this going forward
+build::
+
+image::
+	@if [ -e Dockerfile ]; then \
+		$(MAKE) image-default ; \
+	else \
+		echo "Skipping image for $(shell pwd) since no Dockerfile is present"; \
+	fi
+
+publish::
+	@if [ -e Dockerfile ]; then \
+		$(MAKE) publish-default ; \
+	else \
+		echo "Skipping publish for $(shell pwd) since no Dockerfile is present"; \
+	fi
+
+publish-image::
+	@if [ -e Dockerfile ]; then \
+		$(MAKE) publish-image-default ; \
+	else \
+		echo "Skipping publish-image for $(shell pwd) since no Dockerfile is present"; \
+	fi
+
+test-image::
+	@if [ -e Dockerfile ]; then \
+		$(MAKE) test-image-default ; \
+	else \
+		echo "Skipping test-image for $(shell pwd) since no Dockerfile is present"; \
+	fi
 
 test-src:: .transforms.test-src
 
 setup:: .transforms.setup
 
-publish:: publish-image
+publish-default:: publish-image
 
-publish-image:: .transforms.publish-image-ray
+publish-image-default:: .transforms.publish-image-ray
         
-test-image:: image .transforms.test-image-help .defaults.test-image-pytest .transforms.clean
-
-set-versions::
-
-## We need to think how we want to do this going forward 
-build::
+test-image-default:: image .transforms.test-image-help .defaults.test-image-pytest .transforms.clean
 
 build-lib-wheel:
 	make -C $(REPOROOT)/data-processing-lib build-pkg-dist
 
-image:: build-lib-wheel
+image-default:: build-lib-wheel
 	@$(eval LIB_WHEEL_FILE := $(shell find $(REPOROOT)/data-processing-lib/dist/*.whl))
 	rm -fr dist && mv $(REPOROOT)/data-processing-lib/dist .
 	$(eval WHEEL_FILE_NAME := $(shell basename $(LIB_WHEEL_FILE)))
@@ -59,7 +86,5 @@ image:: build-lib-wheel
 		--build-arg GIT_COMMIT=$(shell git log -1 --format=%h) .
 	$(DOCKER) tag $(DOCKER_LOCAL_IMAGE)  $(DOCKER_REMOTE_IMAGE)
 	rm -fr dist
-
-publish:: publish-image
 
 
