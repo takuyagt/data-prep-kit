@@ -19,7 +19,7 @@ RUN pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}
 COPY --chown=dpk:root src/ src/
 COPY --chown=dpk:root pyproject.toml pyproject.toml
 COPY --chown=dpk:root README.md README.md
-#COPY --chown=dpk:root requirements.txt requirements.txt
+COPY --chown=dpk:root requirements.txt requirements.txt
 
 RUN pip install --no-cache-dir -e .
 
