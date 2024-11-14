@@ -4,6 +4,7 @@ RUN pip install --upgrade --no-cache-dir pip
 
 # install pytest
 RUN pip install --no-cache-dir pytest
+ARG DPK_WHEEL_FILE_NAME
 
 # Create a user and use it to run the transform
 RUN useradd -ms /bin/bash dpk
@@ -12,8 +13,8 @@ WORKDIR /home/dpk
 
 # Copy and install data processing libraries 
 # These are expected to be placed in the docker context before this is run (see the make image).
-COPY --chown=dpk:root data-processing-lib-python/ data-processing-lib-python/
-RUN cd data-processing-lib-python && pip install --no-cache-dir -e .
+COPY --chown=dpk:root data-processing-dist data-processing-dist
+RUN pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}
 
 COPY --chown=dpk:root src/ src/
 COPY --chown=dpk:root pyproject.toml pyproject.toml

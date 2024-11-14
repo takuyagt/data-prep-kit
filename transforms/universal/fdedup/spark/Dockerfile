@@ -1,34 +1,33 @@
 ARG BASE_IMAGE=data-prep-kit-spark-3.5.2:0.3.0
-
 FROM ${BASE_IMAGE}
 
-# USER root
 # install pytest
 RUN pip install --no-cache-dir pytest
+ARG DPK_WHEEL_FILE_NAME
 
 WORKDIR ${SPARK_HOME}/work-dir
 
 # Copy in the data processing framework source/project and install it
 # This is expected to be placed in the docker context before this is run (see the make image).
-COPY --chown=spark:root data-processing-lib-python/ data-processing-lib-python/
-RUN cd data-processing-lib-python && pip install --no-cache-dir -e .
-COPY --chown=spark:root data-processing-lib-spark/ data-processing-lib-spark/
-RUN cd data-processing-lib-spark && pip install --no-cache-dir -e .
+COPY --chown=spark:root data-processing-dist data-processing-dist
+RUN pip install data-processing-dist/${DPK_WHEEL_FILE_NAME}[spark]
+
+## Copy the python version of the tansform
 COPY --chown=spark:root python-transform/  python-transform/
 RUN cd python-transform && pip install --no-cache-dir -e .
 
-# Install project source
+# Install spark project source
 COPY --chown=spark:root src/ src/
 COPY --chown=spark:root pyproject.toml pyproject.toml
+COPY --chown=spark:root README.md README.md
 RUN mkdir -p /opt/spark/work-dir/src/templates && \
     mkdir -p /opt/spark/work-dir/config
+COPY --chown=spark:root deployment/kubernetes/spark-executor-pod-template.yml /opt/spark/work-dir/src/templates/
+COPY --chown=spark:root deployment/kubernetes/spark_profile.yml /opt/spark/work-dir/config/
 
 # install requirements from requirements.txt
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
-
-COPY deployment/kubernetes/spark-executor-pod-template.yml /opt/spark/work-dir/src/templates/
-COPY deployment/kubernetes/spark_profile.yml /opt/spark/work-dir/config/
 
 RUN pip install --no-cache-dir -e .
 
