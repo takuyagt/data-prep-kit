@@ -279,10 +279,12 @@ def fuzzydedup(
             prefix="scdata",
         )
         ComponentUtils.add_settings_to_component(execute_signature_calc_job, ONE_WEEK_SEC)
-        ComponentUtils.set_s3_env_vars_to_component(execute_signature_calc_job, data_s3_access_secret)
-        ComponentUtils.set_s3_env_vars_to_component(
-            execute_signature_calc_job, scdata_s3_access_secret, prefix="scdata"
-        )
+        # FIXME: see https://github.com/kubeflow/pipelines/issues/10914
+        if os.getenv("KFPv2", "0") == "1":
+            ComponentUtils.set_s3_env_vars_to_component(execute_signature_calc_job, data_s3_access_secret)
+            ComponentUtils.set_s3_env_vars_to_component(
+                execute_signature_calc_job, scdata_s3_access_secret, prefix="scdata"
+            )
         execute_signature_calc_job.after(compute_signature_calc_exec_params)
 
         # Get the parameters for the cluster analysis job
@@ -311,7 +313,9 @@ def fuzzydedup(
             server_url=server_url,
         )
         ComponentUtils.add_settings_to_component(execute_cluster_analysis_job, ONE_WEEK_SEC)
-        ComponentUtils.set_s3_env_vars_to_component(execute_cluster_analysis_job, data_s3_access_secret)
+        # FIXME: see https://github.com/kubeflow/pipelines/issues/10914
+        if os.getenv("KFPv2", "0") == "1":
+            ComponentUtils.set_s3_env_vars_to_component(execute_cluster_analysis_job, data_s3_access_secret)
         execute_cluster_analysis_job.after(compute_cluster_analysis_exec_params)
 
         compute_get_duplicate_list_exec_params = compute_get_duplicate_list_exec_params_op(
@@ -338,7 +342,9 @@ def fuzzydedup(
             server_url=server_url,
         )
         ComponentUtils.add_settings_to_component(execute_get_duplicate_list_job, ONE_WEEK_SEC)
-        ComponentUtils.set_s3_env_vars_to_component(execute_get_duplicate_list_job, data_s3_access_secret)
+        # FIXME: see https://github.com/kubeflow/pipelines/issues/10914
+        if os.getenv("KFPv2", "0") == "1":
+            ComponentUtils.set_s3_env_vars_to_component(execute_get_duplicate_list_job, data_s3_access_secret)
         execute_get_duplicate_list_job.after(compute_get_duplicate_list_exec_params)
 
         compute_data_cleaning_exec_params = compute_data_cleaning_exec_params_op(
@@ -368,10 +374,12 @@ def fuzzydedup(
             prefix="dcdata",
         )
         ComponentUtils.add_settings_to_component(execute_data_cleaning_job, ONE_WEEK_SEC)
-        ComponentUtils.set_s3_env_vars_to_component(execute_data_cleaning_job, data_s3_access_secret)
-        ComponentUtils.set_s3_env_vars_to_component(
-            execute_data_cleaning_job, dcdata_s3_access_secret, prefix="dcdata"
-        )
+        # FIXME: see https://github.com/kubeflow/pipelines/issues/10914
+        if os.getenv("KFPv2", "0") == "1":
+            ComponentUtils.set_s3_env_vars_to_component(execute_data_cleaning_job, data_s3_access_secret)
+            ComponentUtils.set_s3_env_vars_to_component(
+                execute_data_cleaning_job, dcdata_s3_access_secret, prefix="dcdata"
+            )
         execute_data_cleaning_job.after(compute_data_cleaning_exec_params)
 
 
