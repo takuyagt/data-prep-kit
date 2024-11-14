@@ -221,10 +221,10 @@ def fuzzydedup(
     with dsl.ExitHandler(clean_up_task):
         # compute execution params
         compute_common_exec_params = compute_common_params_op(
-            ray_worker_options,
-            data_s3_config,
-            fdedup_num_permutations,
-            fdedup_n_samples,
+            worker_options=ray_worker_options,
+            data_s3_config=data_s3_config,
+            num_permutations=fdedup_num_permutations,
+            n_samples=fdedup_n_samples,
         )
         ComponentUtils.add_settings_to_component(compute_common_exec_params, ONE_HOUR_SEC * 2)
         ComponentUtils.set_s3_env_vars_to_component(compute_common_exec_params, data_s3_access_secret)
