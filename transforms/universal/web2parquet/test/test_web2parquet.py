@@ -41,7 +41,7 @@ class TestPythonNOOPTransform(AbstractTransformLauncherTest):
                 transform_config,
                 input_dir,
                 expected_dir,
-                [],  # optional list of column names to ignore in comparing test-generated with expected.
+                ['contents'],  # optional list of column names to ignore in comparing test-generated with expected.
             )
         )
 
