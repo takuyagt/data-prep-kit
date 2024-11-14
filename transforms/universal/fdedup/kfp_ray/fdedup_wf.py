@@ -280,7 +280,7 @@ def fuzzydedup(
         )
         ComponentUtils.add_settings_to_component(execute_signature_calc_job, ONE_WEEK_SEC)
         # FIXME: see https://github.com/kubeflow/pipelines/issues/10914
-        if os.getenv("KFPv2", "0") == "1":
+        if os.getenv("KFPv2", "0") != "1":
             ComponentUtils.set_s3_env_vars_to_component(execute_signature_calc_job, data_s3_access_secret)
             ComponentUtils.set_s3_env_vars_to_component(
                 execute_signature_calc_job, scdata_s3_access_secret, prefix="scdata"
@@ -314,7 +314,7 @@ def fuzzydedup(
         )
         ComponentUtils.add_settings_to_component(execute_cluster_analysis_job, ONE_WEEK_SEC)
         # FIXME: see https://github.com/kubeflow/pipelines/issues/10914
-        if os.getenv("KFPv2", "0") == "1":
+        if os.getenv("KFPv2", "0") != "1":
             ComponentUtils.set_s3_env_vars_to_component(execute_cluster_analysis_job, data_s3_access_secret)
         execute_cluster_analysis_job.after(compute_cluster_analysis_exec_params)
 
@@ -343,7 +343,7 @@ def fuzzydedup(
         )
         ComponentUtils.add_settings_to_component(execute_get_duplicate_list_job, ONE_WEEK_SEC)
         # FIXME: see https://github.com/kubeflow/pipelines/issues/10914
-        if os.getenv("KFPv2", "0") == "1":
+        if os.getenv("KFPv2", "0") != "1":
             ComponentUtils.set_s3_env_vars_to_component(execute_get_duplicate_list_job, data_s3_access_secret)
         execute_get_duplicate_list_job.after(compute_get_duplicate_list_exec_params)
 
@@ -375,7 +375,7 @@ def fuzzydedup(
         )
         ComponentUtils.add_settings_to_component(execute_data_cleaning_job, ONE_WEEK_SEC)
         # FIXME: see https://github.com/kubeflow/pipelines/issues/10914
-        if os.getenv("KFPv2", "0") == "1":
+        if os.getenv("KFPv2", "0") != "1":
             ComponentUtils.set_s3_env_vars_to_component(execute_data_cleaning_job, data_s3_access_secret)
             ComponentUtils.set_s3_env_vars_to_component(
                 execute_data_cleaning_job, dcdata_s3_access_secret, prefix="dcdata"
