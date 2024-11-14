@@ -17,7 +17,9 @@ import pyarrow as pa
 from data_processing.data_access import DataAccessLocal
 from data_processing.transform import AbstractTableTransform
 from data_processing.utils import get_logger
-from dpk_connector import crawl, shutdown
+from dpk_connector import crawl
+from dpk_web2parquet.utils import *
+
 
 
 user_agent = "Mozilla/5.0 (X11; Linux i686; rv:125.0) Gecko/20100101 Firefox/125.0"
@@ -62,17 +64,8 @@ class Web2ParquetTransform(AbstractTableTransform):
         Callback function called when a page has been downloaded.
         You have access to the request URL, response body and headers.
         """
-        doc={}
+        doc=get_file_info(url, headers)
         doc['url'] = url
-#        doc['file_size'] = int(headers.get('Content-Length', 0))  # Default to 0 if not found  
-        doc['content_type']=headers.get('Content-Type')
-        try:
-            filename = headers.get('Content-Disposition').split('filename=')[1].strip().strip('"')
-        except:
-            url_split=url.split('/')
-            filename = url_split[-1] if not url.endswith('/') else url_split[-2]
-            filename = filename.replace('.','_')+"-"+doc['content_type'].split(';')[0].replace("/", ".")
-        doc['filename']=filename
         doc['contents'] = body
         
         logger.debug(f"url: {doc['url']}, filename: {doc['filename']}, content_type: {doc['content_type']}")
@@ -99,12 +92,8 @@ class Web2ParquetTransform(AbstractTableTransform):
             allow_mime_types=self.allow_mime_types
         )  # blocking call
 
-        # Shutdown all crawls
-        # Check with @Matsubara-san as this is preventing us from calling the transfrom method a second time.
-    #    shutdown()
 
         end_time = time.time()      
-#        logger.debug(f"Way After: {self.docs}")
         table = pa.Table.from_pylist(self.docs)
         metadata = {
             "count": len(self.docs),

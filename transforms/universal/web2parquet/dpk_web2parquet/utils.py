@@ -10,18 +10,29 @@
 # limitations under the License.
 ################################################################################
 
-from datetime import datetime
 
-def get_file_info(headers, url):
-    # Extract file size
-    file_size = int(headers.get('Content-Length', 0))  # Default to 0 if not found
-    content_type = headers.get('Content-Type')
+from urllib.parse import urlparse
+
+def get_file_info(url: str, headers: dict=None):
+    try:
+        file_size = int(headers['Content-Length'])
+    except:
+        file_size=0        
+    try:
+        content_type=headers.get('Content-Type')
+    except:
+        content_type='text/html'
+        
+    url_parse=urlparse(url)
     try:
         filename = headers.get('Content-Disposition').split('filename=')[1].strip().strip('"')
     except:
-        url_split=url.split('/')
-        filename = url_split[-1] if not url.endswith('/') else url_split[-2]
-        filename = filename.replace('.','_')+"-"+content_type.replace("/", ".")
+        filename='-'.join(url_parse.path.strip('/').split('/'))
+    # Prepend host name 
+    filename=url_parse.netloc.replace('.',"_")+'_'+filename
+    
+    # append extension using content type
+    filename = filename+"_"+content_type.split(';')[0].replace("/", ".")
+    return {'filename':filename, 'content_type': content_type, 'file_size': file_size}
 
-    return filename, content_type, file_size
 

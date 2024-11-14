@@ -10,7 +10,6 @@
 # limitations under the License.
 ################################################################################
 
-import os
 
 from dpk_web2parquet.transform import Web2Parquet
 

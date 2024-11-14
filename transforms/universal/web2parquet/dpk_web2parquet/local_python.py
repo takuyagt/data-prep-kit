@@ -20,7 +20,7 @@ from dpk_web2parquet.python_runtime import Web2ParquetPythonTransformConfigurati
 
 # create parameters
 input_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..","test-data","input"))
-output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output"))
+output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test-data", "output"))
 local_conf = {
     "input_folder": input_folder,
     "output_folder": output_folder,

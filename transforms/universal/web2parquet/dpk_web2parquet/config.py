@@ -10,12 +10,8 @@
 # limitations under the License.
 ################################################################################
 
-import time
-import sys
 from argparse import ArgumentParser, Namespace
-from typing import Any
 
-import pyarrow as pa
 from data_processing.transform import TransformConfiguration
 from data_processing.utils import CLIArgumentProvider
 from data_processing.utils import get_logger
@@ -58,7 +54,7 @@ class Web2ParquetTransformConfiguration(TransformConfiguration):
             help="maxumum number of downloaded URLs",
         )
         parser.add_argument(f"--{folder_cli_param}", type=str, default=None,
-            help="Folder wher to store downloaded files",
+            help="Folder where to store downloaded files",
         )
         parser.add_argument(f"--{urls_cli_param}", type=str, default=None,
             help="List of Seed URLs for the crawler",
