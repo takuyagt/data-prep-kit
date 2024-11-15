@@ -23,18 +23,9 @@ from signature_calc_transform_python import (
 
 # create parameters
 input_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test-data", "input"))
-output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output", "test_scdata"))
+output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output"))
 local_conf = {"input_folder": input_folder, "output_folder": output_folder}
 code_location = {"github": "github", "commit_hash": "12345", "path": "path"}
-s3_creds = {
-    "access_key": os.getenv("AWS_ACCESS_KEY_ID"),
-    "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
-    "url": os.getenv("AWS_ENDPOINT_URL"),
-}
-s3_config = {
-    "input_folder": "s3://cos-optimal-llm-pile/spark_test/fuzzy_dedup_test_data/",
-    "output_folder": "s3://cos-optimal-llm-pile/spark_test/fuzzy_dedup_test_output_data/s3_test_3/",
-}
 
 params = {
     # Data access. Only required parameters are specified
@@ -47,18 +38,12 @@ params = {
     "minhash_num_permutations": 112,
     "minhash_num_bands": 14,
     "minhash_num_segments": 2,
-    # "scdata_s3_cred": ParamsUtils.convert_to_ast(s3_creds),
-    # "scdata_s3_config": ParamsUtils.convert_to_ast(s3_config),
 }
 
 
 if __name__ == "__main__":
     # Set the simulated command line args
     sys.argv = ParamsUtils.dict_to_req(d=params)
-    print(sys.argv)
-
-    sys.argv.append("--data_s3_cred")
-    sys.argv.append(ParamsUtils.convert_to_ast(s3_creds))
 
     # create launcher
     launcher = PythonTransformLauncher(runtime_config=SignatureCalculationPythonTransformConfiguration())

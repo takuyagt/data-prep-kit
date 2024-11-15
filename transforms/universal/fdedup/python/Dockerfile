@@ -27,8 +27,8 @@ RUN pip install --no-cache-dir -e .
 COPY src/ src/
 
 # copy source data
-COPY ./src/signature_calc_transform_python.py fdedup_transform_python.py
-COPY ./src/signature_calc_local_python.py local/
+COPY ./src/fdedup_transform_python.py fdedup_transform_python.py
+COPY ./src/fdedup_transform_python.py local/
 
 # copy test
 COPY test/ test/

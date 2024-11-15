@@ -140,7 +140,7 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
         # Generate the docs_to_remove dataframe
         docs_to_remove_dataframe = jaccard_cluster_dataframe.explode("docs_to_remove")
         output_data = TransformUtils.convert_arrow_to_binary(docs_to_remove_dataframe.to_arrow())
-        self.logger.info(f"{len(docs_to_remove_dataframe)} documents marked to remove")
+        self.logger.debug(f"{len(docs_to_remove_dataframe)} documents marked to remove")
         metadata |= {"num_duplicate_documents": len(docs_to_remove_dataframe)}
         return [(output_data, output_path)], metadata
 
@@ -187,8 +187,8 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
             max_cdocs = 0
             min_cdocs = 0
             avg_cdocs = 0
-        self.logger.info(f"After GroupBy: {num_clusters} clusters with {sum_cdocs} total docs")
-        self.logger.info(f" max/min/avg docs per cluster: {max_cdocs}/{min_cdocs}/{avg_cdocs:.2f}")
+        self.logger.debug(f"After GroupBy: {num_clusters} clusters with {sum_cdocs} total docs")
+        self.logger.debug(f" max/min/avg docs per cluster: {max_cdocs}/{min_cdocs}/{avg_cdocs:.2f}")
         cluster_stats = {
             "groupby_clusters": num_clusters,
             "cluster_duplicate_docs": sum_cdocs,
@@ -226,8 +226,8 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
             max_cdocs = 0
             min_cdocs = 0
             avg_cdocs = 0
-        self.logger.info(f"After Jaccard: {num_clusters} clusters with {sum_cdocs} total docs")
-        self.logger.info(f" max/min/avg docs per cluster: {max_cdocs}/{min_cdocs}/{avg_cdocs:.2f}")
+        self.logger.debug(f"After Jaccard: {num_clusters} clusters with {sum_cdocs} total docs")
+        self.logger.debug(f" max/min/avg docs per cluster: {max_cdocs}/{min_cdocs}/{avg_cdocs:.2f}")
         jaccard_stats = {
             "jaccard_clusters": num_clusters,
             "jaccard_duplicate_docs": sum_cdocs,

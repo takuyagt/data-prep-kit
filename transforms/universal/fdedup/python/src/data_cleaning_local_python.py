@@ -23,15 +23,20 @@ from data_processing.utils import ParamsUtils
 
 
 # create parameters
-input_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test-data", "data_1"))
-output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output", "cleaned"))
+input_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test-data", "input"))
+output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output"))
 local_conf = {
     "input_folder": input_folder,
     "output_folder": output_folder,
 }
 duplicate_location = os.path.abspath(
     os.path.join(
-        os.path.dirname(__file__), "..", "output", "docs_to_remove_consolidated", "docs_to_remove_consolidated.parquet"
+        os.path.dirname(__file__),
+        "..",
+        "test-data",
+        "expected",
+        "docs_to_remove_consolidated",
+        "docs_to_remove_consolidated.parquet",
     )
 )
 code_location = {"github": "github", "commit_hash": "12345", "path": "path"}
@@ -49,7 +54,6 @@ params = {
 if __name__ == "__main__":
     # Set the simulated command line args
     sys.argv = ParamsUtils.dict_to_req(d=params)
-    print(sys.argv)
     # create launcher
     launcher = PythonTransformLauncher(runtime_config=DataCleaningPythonTransformConfiguration())
     # Launch the ray actor(s) to process the input

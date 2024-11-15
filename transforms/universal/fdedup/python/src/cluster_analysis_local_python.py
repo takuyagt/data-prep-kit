@@ -21,7 +21,9 @@ from data_processing.utils import ParamsUtils
 
 
 # create parameters
-input_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output", "bands"))
+input_folder = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "test-data", "expected", "signature_calc", "bands")
+)
 output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output", "docs_to_remove"))
 local_conf = {
     "input_folder": input_folder,
@@ -42,7 +44,6 @@ params = {
 if __name__ == "__main__":
     # Set the simulated command line args
     sys.argv = ParamsUtils.dict_to_req(d=params)
-    print(sys.argv)
     # create launcher
     launcher = PythonTransformLauncher(runtime_config=ClusterAnalysisPythonTransformConfiguration())
     # Launch python to process the input

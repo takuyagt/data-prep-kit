@@ -21,8 +21,10 @@ from get_duplicate_list_transform_python import (
 
 
 # create parameters
-input_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test-data", "expected/cluster_analysis"))
-output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test-data", "expected"))
+input_folder = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "test-data", "expected", "cluster_analysis")
+)
+output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output"))
 local_conf = {
     "input_folder": input_folder,
     "output_folder": output_folder,
