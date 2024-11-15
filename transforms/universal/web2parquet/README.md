@@ -1,0 +1,37 @@
+# Web Crawler to Parquet
+
+This tranforms crawls the web and download files in real-time.
+
+This first release of the transform, only accept the following 4 parameters. Additional releases will extend the functionality to allow the user to specify additional constraints such as mime-type, domain-focus, etc.
+
+
+## parameters
+
+For configuring the crawl, users need to identify the follow paramters:
+
+| parameter:type | Description |
+| --- | --- |
+| urls:list | list of seeds URL (i.e. ['https://thealliance.ai'] or ['https://www.apache.org/projects','https://www.apache.org/foundation']). The list can include any number of valid urls that are not configured to block web crawlers |
+|depth:int | control crawling depth |
+| downloads:int | number of downloads that are stored to the download folder. Since the crawler operations happen asyncrhonous, the process can result in any 10 of the visited URLs being retrieved (i.e. consecutive runs can result in different files being downloaded) |
+| folder:str | folder where downloaded files are stored. If the folder is not empty, new files are  added or replace existing ones with the same URLs |
+
+
+## Invoking the transform from a notebook
+
+In order to invoke the transfrom from the notebook, users must enable nested asynchronous io as follow:
+import nest_asyncio
+nest_asyncio.apply()
+
+In order to invoke the transform users need to import the transform class and call the transform() function:
+
+example:
+```
+import nest_asyncio
+nest_asyncio.apply()
+from dpk_web2parquet.transform import Web2Parquet
+Web2Parquet(urls= ['https://thealliance.ai/'],
+                    depth=2, 
+                    downloads=10,
+                    folder='downloads').transform()
+````
