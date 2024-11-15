@@ -1,6 +1,6 @@
 REPOROOT=../../..
 # Use make help, to see the available rules
-include $(REPOROOT)/transforms/.make.modules
+include $(REPOROOT)/transforms/.make.cicd.targets
 
 #
 # This is intended to be included across the Makefiles provided within

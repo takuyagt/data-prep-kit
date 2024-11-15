@@ -1,13 +1,6 @@
 # Define the root of the local git clone for the common rules to be able 
 # know where they are running from.
 
-# Set this, before including .make.defaults, to 
-#   1 if requirements reference the latest code in the data processing library 
-#     in this repo (that is not yet published to pypi).	 This is the default setting.
-#   0 if the transforms DPK dependencies are on wheels published to 
-#     pypi (e.g. data-prep-toolkit=0.2.1)
-#USE_REPO_LIB_SRC=1
-
 # Include a library of common .transform.* targets which most
 # transforms should be able to reuse.  However, feel free
 # to override/redefine the rules below. 
@@ -15,11 +8,17 @@ include $(REPOROOT)/transforms/.make.transforms
 
 ######################################################################
 ## Default setting for TRANSFORM_RUNTIME uses folder name-- Old layout
-TRANSFORM_RUNTIME=ray
-TRANSFORM_RUNTIME_SRC_FILE=-m dpk_$(TRANSFORM_NAME).$(TRANSFORM_RUNTIME).transform
+TRANSFORM_PYTHON_RUNTIME_SRC_FILE=-m dpk_$(TRANSFORM_NAME).transform
+TRANSFORM_RAY_RUNTIME_SRC_FILE=-m dpk_$(TRANSFORM_NAME).ray.transform
+TRANSFORM_PYTHON_RUNTIME_SRC_FILE=-m dpk_$(TRANSFORM_NAME).spark.transform
 
-venv::	.transforms.ray-venv
-	source venv/bin/activate && $(PYTHON) -m pip install $(REPOROOT)/data-connector-lib
+venv::	.defaults.create-venv
+	source venv/bin/activate && $(PIP) install -e $(REPOROOT)/data-processing-lib[ray,spark]
+	source venv/bin/activate && $(PIP) install -e $(REPOROOT)/data-connector-lib
+	if [ -e requirements.txt ]; then \
+		source venv/bin/activate && $(PIP) install -r  requirements.txt; \
+	fi; 
+
 
 test:: .transforms.test-src test-image
 
@@ -65,7 +64,7 @@ setup:: .transforms.setup
 
 publish-default:: publish-image
 
-publish-image-default:: .transforms.publish-image-ray
+publish-image-default:: .defaults.publish-image
         
 test-image-default:: image .transforms.test-image-help .defaults.test-image-pytest .transforms.clean
 
