@@ -19,13 +19,9 @@ For configuring the crawl, users need to identify the follow parameters:
 
 ## Invoking the transform from a notebook
 
-In order to invoke the transfrom from a notebook, users must enable nested asynchronous io as follows:
-import nest_asyncio
-nest_asyncio.apply()
+In order to invoke the transfrom from a notebook, users must enable nested asynchronous ( https://pypi.org/project/nest-asyncio/ ), import the transform class and call the `transform()`function as shown in the example below:
 
-In order to invoke the transform, users need to import the transform class and call the transform() function:
 
-example:
 ```
 import nest_asyncio
 nest_asyncio.apply()
