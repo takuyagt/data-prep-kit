@@ -14,6 +14,10 @@ import os
 import sys
 
 import polars as pl
+from data_cleaning_transform import (
+    document_id_column_cli_param,
+    duplicate_list_location_cli_param,
+)
 from data_cleaning_transform_spark import DataCleaningSparkTransformConfiguration
 from data_processing.utils import ParamsUtils
 from data_processing_spark.runtime.spark import SparkTransformLauncher

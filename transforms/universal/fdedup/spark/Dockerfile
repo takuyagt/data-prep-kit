@@ -32,11 +32,7 @@ RUN pip3 install -r requirements.txt
 RUN pip install --no-cache-dir -e .
 
 # copy the main() entry point to the image
-COPY ./src/signature_calc_spark.py .
-
-# copy some of the samples in
-COPY src/signature_calc_transform_spark.py fdedup_transform_spark.py
-COPY src/signature_calc_spark.py local/fdedup_local_spark.py
+COPY ./src/fdedup_transform_spark.py .
 
 # copy test
 COPY test/ test/
