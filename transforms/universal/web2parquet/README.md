@@ -23,7 +23,7 @@ In order to invoke the transfrom from a notebook, users must enable nested async
 import nest_asyncio
 nest_asyncio.apply()
 
-In order to invoke the transform users need to import the transform class and call the transform() function:
+In order to invoke the transform, users need to import the transform class and call the transform() function:
 
 example:
 ```
