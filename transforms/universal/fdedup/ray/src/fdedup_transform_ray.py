@@ -19,7 +19,7 @@ from data_cleaning_transform_ray import DataCleaningRayTransformConfiguration
 from data_processing.runtime.pure_python import PythonTransformLauncher
 from data_processing.utils import ParamsUtils
 from data_processing_ray.runtime.ray import RayTransformLauncher
-from fuzzy_dedup_python import ServiceOrchestrator, parse_args
+from fdedup_transform_python import ServiceOrchestrator, parse_args
 from get_duplicate_list_transform_python import (
     GetDuplicateListPythonTransformConfiguration,
 )

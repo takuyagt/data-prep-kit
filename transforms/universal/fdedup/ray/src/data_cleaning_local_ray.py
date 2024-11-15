@@ -23,15 +23,20 @@ from data_processing_ray.runtime.ray import RayTransformLauncher
 
 
 # create parameters
-input_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test-data", "data_1"))
-output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output", "cleaned"))
+input_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "test-data", "input"))
+output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output"))
 local_conf = {
     "input_folder": input_folder,
     "output_folder": output_folder,
 }
 duplicate_location = os.path.abspath(
     os.path.join(
-        os.path.dirname(__file__), "..", "output", "docs_to_remove_consolidated", "docs_to_remove_consolidated.parquet"
+        os.path.dirname(__file__),
+        "..",
+        "test-data",
+        "expected",
+        "docs_to_remove_consolidated",
+        "docs_to_remove_consolidated.parquet",
     )
 )
 worker_options = {"num_cpus": 0.8}
