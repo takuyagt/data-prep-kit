@@ -7,7 +7,7 @@ This first release of the transform, only accepts the following 4 parameters. Ad
 
 ## Parameters
 
-For configuring the crawl, users need to specify the follow parameters:
+For configuring the crawl, users need to specify the following parameters:
 
 | parameter:type | Description |
 | --- | --- |

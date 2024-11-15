@@ -132,3 +132,9 @@ test-pkg-dist:
 
 publish-dist :: .defaults.publish-dist
 
+publish-testpypi:
+	## when installing from testpypi, make sure you install the dependecies first (pip install data-prep-toolkit)
+	## and then use extra-url-index to install this package:
+	## pip install --extra-index-url https://test.pypi.org/simple/ 'data-prep-toolkit-transforms[all]==x.x.x.devx'
+	twine upload --repository testpypi dist/*
+
