@@ -133,7 +133,7 @@ The matrix below shows the the combination of modules and supported runtimes. Al
 | **Data Ingestion**                                                                   |                    |                    |                    |                    |
 | [Code (from zip) to Parquet](transforms/code/code2parquet/python/README.md)          | :white_check_mark: | :white_check_mark: |                    | :white_check_mark: |
 | [PDF to Parquet](transforms/language/pdf2parquet/python/README.md)                   | :white_check_mark: | :white_check_mark: |                    | :white_check_mark: |
-| [HTML to Parquet](transforms/language/html2parquet/python/README.md)                 | :white_check_mark: | :white_check_mark: |                    |                    |
+| [HTML to Parquet](transforms/language/html2parquet/python/README.md)                 | :white_check_mark: | :white_check_mark: |                    | :white_check_mark: |
 | **Universal (Code & Language)**                                                      |                    |                    |                    |                    | 
 | [Exact dedup filter](transforms/universal/ededup/ray/README.md)                      | :white_check_mark: | :white_check_mark: |                    | :white_check_mark: |
 | [Fuzzy dedup filter](transforms/universal/fdedup/ray/README.md)                      |                    | :white_check_mark: |                    | :white_check_mark: |
@@ -223,11 +223,11 @@ If you use Data Prep Kit in your research, please cite our paper:
 @misc{wood2024dataprepkitgettingdataready,
       title={Data-Prep-Kit: getting your data ready for LLM application development}, 
       author={David Wood and Boris Lublinsky and Alexy Roytman and Shivdeep Singh 
-      and Abdulhamid Adebayo and Revital Eres and Mohammad Nassar and Hima Patel 
-      and Yousaf Shah and Constantin Adam and Petros Zerfos and Nirmit Desai 
-      and Daiki Tsuzuku and Takuya Goto and Michele Dolfi and Saptha Surendran 
-      and Paramesvaran Selvam and Sungeun An and Yuan Chi Chang and Dhiraj Joshi 
-      and Hajar Emami-Gohari and Xuan-Hong Dang and Yan Koyfman and Shahrokh Daijavad},
+      and Constantin Adam and Abdulhamid Adebayo and Sungeun An and Yuan Chi Chang 
+      and Xuan-Hong Dang and Nirmit Desai and Michele Dolfi and Hajar Emami-Gohari 
+      and Revital Eres and Takuya Goto and Dhiraj Joshi and Yan Koyfman 
+      and Mohammad Nassar and Hima Patel and Paramesvaran Selvam and Yousaf Shah  
+      and Saptha Surendran and Daiki Tsuzuku and Petros Zerfos and Shahrokh Daijavad},
       year={2024},
       eprint={2409.18164},
       archivePrefix={arXiv},
