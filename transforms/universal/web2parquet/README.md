@@ -1,13 +1,13 @@
 # Web Crawler to Parquet
 
-This tranforms crawls the web and download files in real-time.
+This tranform crawls the web and downloads files in real-time.
 
-This first release of the transform, only accept the following 4 parameters. Additional releases will extend the functionality to allow the user to specify additional constraints such as mime-type, domain-focus, etc.
+This first release of the transform, only accepts the following 4 parameters. Additional releases will extend the functionality to allow the user to specify additional constraints such as mime-type, domain-focus, etc.
 
 
-## parameters
+## Parameters
 
-For configuring the crawl, users need to identify the follow paramters:
+For configuring the crawl, users need to identify the follow parameters:
 
 | parameter:type | Description |
 | --- | --- |
