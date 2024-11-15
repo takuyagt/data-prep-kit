@@ -47,7 +47,8 @@ all = { file = [
 "universal/profiler/python/requirements.txt",
 "universal/doc_id/python/requirements.txt",
 "universal/filter/python/requirements.txt",
-"universal/resize/python/requirements.txt"
+"universal/resize/python/requirements.txt",
+"universal/web2parquet/requirements.txt"
 ]}
 
 # pyproject.toml must be in a parent and cannot be in sibling
