@@ -7,7 +7,7 @@ This first release of the transform, only accepts the following 4 parameters. Ad
 
 ## Parameters
 
-For configuring the crawl, users need to identify the follow parameters:
+For configuring the crawl, users need to specify the follow parameters:
 
 | parameter:type | Description |
 | --- | --- |
@@ -16,6 +16,25 @@ For configuring the crawl, users need to identify the follow parameters:
 | downloads:int | number of downloads that are stored to the download folder. Since the crawler operations happen asynchronously, the process can result in any 10 of the visited URLs being retrieved (i.e. consecutive runs can result in different files being downloaded) |
 | folder:str | folder where downloaded files are stored. If the folder is not empty, new files are  added or replace the existing ones with the same URLs |
 
+
+## Install the transform
+
+The transform can be installed directly from pypi and has a dependency on the data-prep-toolkit and the data-prep-connector
+
+```
+pip install data-prep-connector
+pip install data-prep-toolkit>=0.2.2.dev2
+pip install data-prep-toolkit-transform[web2parquet]>=0.2.2.dev3
+```
+
+If working from a fork in the git repo, from the root folder of the git repo, do the following:
+
+```
+cd transform/universal/web2parquet
+make venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
 ## Invoking the transform from a notebook
 
