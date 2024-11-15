@@ -35,7 +35,7 @@ Note: This list includes the transforms that were part of the release starting w
 	* [resize](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/resize/python/README.md)
 	* [tokenization](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/tokenization/python/README.md)
 	* [doc_id](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/doc_id/python/README.md)
-	* [web2prquet](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/web2parquet/README.md)
+	* [web2parquet](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/web2parquet/README.md)
 
 	
 
