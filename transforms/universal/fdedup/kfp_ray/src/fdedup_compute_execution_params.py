@@ -57,16 +57,18 @@ def compute_common_params(
     # Also, to keep S3 utilization in check, limit the number of actors to 2000
     num_nodes = worker_options["replicas"]
     cpu_per_node = worker_options["cpu"] - 1
-    memory_per_node = 0.85 * worker_options["memory"]
+    memory_per_node = worker_options["memory"]
 
     memory_per_actor = 16  # GB
     max_num_actors = 2000
     num_actors_per_node: int = int(memory_per_node / memory_per_actor)
     if num_actors_per_node == 0:
         num_actors_per_node = 1
-    num_actors = num_nodes * num_actors_per_node
+    # never run actors on the head node, so (n - 1) nodes to run actors
+    num_actors = (num_nodes - 1) * num_actors_per_node
+
     while num_actors > max_num_actors:
-        num_actors -= num_nodes
+        num_actors -= num_nodes - 1
         num_actors_per_node -= 1
     print(f"Number of actors per node = {num_actors_per_node}")
     cpus_per_actor = cpu_per_node / num_actors_per_node
