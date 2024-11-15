@@ -11,7 +11,7 @@ For configuring the crawl, users need to identify the follow parameters:
 
 | parameter:type | Description |
 | --- | --- |
-| urls:list | list of seeds URL (i.e., ['https://thealliance.ai'] or ['https://www.apache.org/projects','https://www.apache.org/foundation']). The list can include any number of valid urls that are not configured to block web crawlers |
+| urls:list | list of seed URLs (i.e., ['https://thealliance.ai'] or ['https://www.apache.org/projects','https://www.apache.org/foundation']). The list can include any number of valid URLS that are not configured to block web crawlers |
 |depth:int | control crawling depth |
 | downloads:int | number of downloads that are stored to the download folder. Since the crawler operations happen asynchronously, the process can result in any 10 of the visited URLs being retrieved (i.e. consecutive runs can result in different files being downloaded) |
 | folder:str | folder where downloaded files are stored. If the folder is not empty, new files are  added or replace the existing ones with the same URLs |
