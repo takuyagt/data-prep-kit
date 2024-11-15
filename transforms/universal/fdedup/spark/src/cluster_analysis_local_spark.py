@@ -19,14 +19,30 @@ from data_processing.utils import ParamsUtils
 from data_processing_spark.runtime.spark import SparkTransformLauncher
 
 
+# create parameters
+input_folder = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "test-data", "expected", "signature_calc", "bands")
+)
+output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "output", "docs_to_remove"))
+local_conf = {
+    "input_folder": input_folder,
+    "output_folder": output_folder,
+}
+code_location = {"github": "github", "commit_hash": "12345", "path": "path"}
+params = {
+    # Data access. Only required parameters are specified
+    "data_local_config": ParamsUtils.convert_to_ast(local_conf),
+    # execution info
+    "runtime_pipeline_id": "pipeline_id",
+    "runtime_job_id": "job_id",
+    "runtime_code_location": ParamsUtils.convert_to_ast(code_location),
+    "cluster_num_bands": 14,
+    "cluster_num_segments": 2,
+    "cluster_jaccard_similarity_threshold": 0.7,
+}
 if __name__ == "__main__":
-    sys.argv.append("--data_s3_cred")
-    s3_creds = {
-        "access_key": os.getenv("AWS_ACCESS_KEY_ID"),
-        "secret_key": os.getenv("AWS_SECRET_ACCESS_KEY"),
-        "url": os.getenv("AWS_ENDPOINT_URL"),
-    }
-    sys.argv.append(ParamsUtils.convert_to_ast(s3_creds))
+    # Set the simulated command line args
+    sys.argv = ParamsUtils.dict_to_req(d=params)
     # create launcher
     launcher = SparkTransformLauncher(runtime_config=ClusterAnalysisSparkTransformConfiguration())
     # Launch the spark worker(s) to process the input

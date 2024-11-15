@@ -18,7 +18,7 @@ from cluster_analysis_transform_spark import ClusterAnalysisSparkTransformConfig
 from data_cleaning_transform_spark import DataCleaningSparkTransformConfiguration
 from data_processing.runtime.pure_python import PythonTransformLauncher
 from data_processing_spark.runtime.spark import SparkTransformLauncher
-from fuzzy_dedup_python import ServiceOrchestrator, parse_args
+from fdedup_transform_python import ServiceOrchestrator, parse_args
 from get_duplicate_list_transform_python import (
     GetDuplicateListPythonTransformConfiguration,
 )
