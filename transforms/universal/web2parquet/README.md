@@ -24,7 +24,7 @@ The transform can be installed directly from pypi and has a dependency on the da
 ```
 pip install data-prep-connector
 pip install data-prep-toolkit>=0.2.2.dev2
-pip install data-prep-toolkit-transform[web2parquet]>=0.2.2.dev3
+pip install 'data-prep-toolkit-transforms[web2parquet]>=0.2.2.dev3'
 ```
 
 If working from a fork in the git repo, from the root folder of the git repo, do the following:
