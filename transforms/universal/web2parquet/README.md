@@ -30,7 +30,7 @@ pip install data-prep-toolkit-transform[web2parquet]>=0.2.2.dev3
 If working from a fork in the git repo, from the root folder of the git repo, do the following:
 
 ```
-cd transform/universal/web2parquet
+cd transforms/universal/web2parquet
 make venv
 source venv/bin/activate
 pip install -r requirements.txt
