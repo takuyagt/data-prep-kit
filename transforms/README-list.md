@@ -42,7 +42,7 @@ Note: This list includes the transforms that were part of the release starting w
 ### 0.2.2.dev3 
 * web2parquet
 ### 0.2.2.dev2
-* pdf2parquet now supports HTML,DOCX,PPTX in addition to PDF
+* pdf2parquet now supports HTML,DOCX,PPTX, ... in addition to PDF
 
 
 
