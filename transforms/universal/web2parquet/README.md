@@ -21,6 +21,14 @@ For configuring the crawl, users need to specify the following parameters:
 
 The transform can be installed directly from pypi and has a dependency on the data-prep-toolkit and the data-prep-connector
 
+Set up the local environment to run Jupyter notebook:
+```
+python -v venv venv
+source venv/bin/activate
+pip install jupyter lab
+```
+Install pre-requisites:
+
 ```
 pip install data-prep-connector
 pip install data-prep-toolkit>=0.2.2.dev2
