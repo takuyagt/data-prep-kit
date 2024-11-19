@@ -11,16 +11,12 @@
 ################################################################################
 import io
 import os
-import re
 from argparse import ArgumentParser, Namespace
-from typing import Any, List, Tuple
+from typing import Any
 
-import numpy as np
 import polars as pl
-import pyarrow as pa
 from data_processing.transform import AbstractFolderTransform, TransformConfiguration
 from data_processing.utils import CLIArgumentProvider, TransformUtils, get_logger
-from Murmur_MH import Murmur_MH
 
 
 short_name = "fdlist"
@@ -61,7 +57,7 @@ class GetDuplicateListTransform(AbstractFolderTransform):
     This is an intermediate step of the fuzzy dedup pipeline. It runs in a single
     location and consolidates in a single file all the duplicates found for each
     band segment.
-    Args:
+    These internal variables are initialized from the config dictionary:
         subfolder: name of the subfolder with the duplicate records
         consolidated_filename: name of the file with the consolidated list of duplicates
     """
@@ -82,7 +78,7 @@ class GetDuplicateListTransform(AbstractFolderTransform):
     def transform(self, folder_name: str) -> tuple[list[tuple[bytes, str]], dict[str, Any]]:
         self.logger.info(f"Get Duplicate List for folder {folder_name}")
         metadata = {}
-        input_folder = self.sanitize_folder_name(os.path.join(self.data_access.input_folder, folder_name))
+        input_folder = TransformUtils.clean_path(os.path.join(self.data_access.input_folder, folder_name))
         files, retries = self.data_access.get_folder_files(
             path=input_folder,
             extensions=[".parquet"],
@@ -90,24 +86,17 @@ class GetDuplicateListTransform(AbstractFolderTransform):
         )
         if retries > 0:
             metadata |= {"data_access_retries": retries}
-        output_folder = self.sanitize_folder_name(self.data_access.output_folder)
+        output_folder = TransformUtils.clean_path(self.data_access.output_folder)
         output_path = os.path.join(output_folder, self.consolidated_filename)
 
         # consolidate into a single data frame band hashes computed by workers
-        consolidated_dataframe, consolidation_stats = self.consolidate_docs_to_remove_files(files)
+        consolidated_dataframe, consolidation_stats = self._consolidate_docs_to_remove_files(files)
         self.logger.info(f"{len(consolidated_dataframe)} documents marked as duplicates")
         metadata |= consolidation_stats
         output_data = TransformUtils.convert_arrow_to_binary(consolidated_dataframe.to_arrow())
         return [(output_data, output_path)], metadata
 
-    def sanitize_folder_name(self, folder_name: str) -> str:
-        if "://" in folder_name:
-            _, folder_name = folder_name.split("://")
-        if folder_name[-1] != "/":
-            folder_name = f"{folder_name}/"
-        return folder_name
-
-    def consolidate_docs_to_remove_files(self, files: dict[str, bytes]) -> tuple[pl.DataFrame, dict[str, Any]]:
+    def _consolidate_docs_to_remove_files(self, files: dict[str, bytes]) -> tuple[pl.DataFrame, dict[str, Any]]:
         consolidated_dataframe = pl.DataFrame()
         total_input_rows = 0
         for fname, contents in files.items():

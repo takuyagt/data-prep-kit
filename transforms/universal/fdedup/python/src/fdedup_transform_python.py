@@ -115,17 +115,38 @@ class ServiceOrchestrator:
                 s3_cred_ast = ParamsUtils.convert_to_ast(in_args.s3_cred)
                 sys_argv.append("--data_s3_cred")
                 sys_argv.append(s3_cred_ast)
+                if service_name == "minhash":
+                    sys_argv.append("--scdata_s3_cred")
+                    sys_argv.append(s3_cred_ast)
+                if service_name == "fdclean":
+                    sys_argv.append("--dcdata_s3_cred")
+                    sys_argv.append(s3_cred_ast)
             elif (
                 s3_creds.get("access_key") is not None
                 and s3_creds.get("secret_key") is not None
                 and s3_creds.get("url") is not None
             ):
+                ast_s3_cred = ParamsUtils.convert_to_ast(s3_creds)
                 sys_argv.append("--data_s3_cred")
-                sys_argv.append(ParamsUtils.convert_to_ast(s3_creds))
+                sys_argv.append(ast_s3_cred)
+                if service_name == "minhash":
+                    sys_argv.append("--scdata_s3_cred")
+                    sys_argv.append(ast_s3_cred)
+                if service_name == "fdclean":
+                    sys_argv.append("--dcdata_s3_cred")
+                    sys_argv.append(ast_s3_cred)
             sys_argv.append("--data_s3_config")
         else:
             sys_argv.append("--data_local_config")
-        sys_argv.append(ParamsUtils.convert_to_ast(data_io))
+        ast_data_io = ParamsUtils.convert_to_ast(data_io)
+        sys_argv.append(ast_data_io)
+        if in_args.use_s3:
+            if service_name == "minhash":
+                sys_argv.append("--scdata_s3_config")
+                sys_argv.append(ast_data_io)
+            if service_name == "fdclean":
+                sys_argv.append("--dcdata_s3_config")
+                sys_argv.append(ast_data_io)
         return sys_argv
 
     def execute_service(self, service_short_name: str, params: list) -> int:
@@ -163,9 +184,9 @@ def parse_args() -> argparse.Namespace:
         "--contents_column", type=str, required=False, help="name of the column that stores document text"
     )
     parser.add_argument(
-        "--document_id_column", type=str, required=False, help="name of the column that stores document text"
+        "--document_id_column", type=str, required=False, help="name of the column that stores document ID"
     )
-    parser.add_argument("--seed", type=int, required=False, help="name of the column that stores document text")
+    parser.add_argument("--seed", type=int, required=False, help="seed of the random number generator")
     parser.add_argument(
         "--num_permutations", type=int, required=False, help="number of permutations to use for minhash calculation"
     )

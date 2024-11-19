@@ -13,13 +13,17 @@ import io
 import os
 import re
 from argparse import ArgumentParser, Namespace
-from typing import Any, List, Tuple
+from typing import Any, List
 
 import numpy as np
 import polars as pl
-import pyarrow as pa
 from data_processing.transform import AbstractFolderTransform, TransformConfiguration
-from data_processing.utils import CLIArgumentProvider, TransformUtils, get_logger
+from data_processing.utils import (
+    CLIArgumentProvider,
+    TransformUtils,
+    UnrecoverableException,
+    get_logger,
+)
 from Murmur_MH import Murmur_MH
 
 
@@ -86,7 +90,7 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
     to keep (the largest size document), and mark the other documents as
     duplicates. The resulting clusters are saved in a file for further analysis.
 
-    Args:
+    The following internal variables are initialized from the config parameter:
         num_bands: number of bands used in the banding technique
         jaccard_similarity_threshold: Jaccard similarity threshold above which two documents are duplicates
         num_segments: the number of segments dividing the hashing space for each band
@@ -106,12 +110,14 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
         )
         self.sort_output = config.get(sort_output_key, sort_output_default)
         self.data_access = config.get("data_access")
+        if self.data_access is None:
+            raise UnrecoverableException("Could not get a pointer to the data access object inside the transform.")
         self.logger = get_logger(__name__)
 
     def transform(self, folder_name: str) -> tuple[list[tuple[bytes, str]], dict[str, Any]]:
         self.logger.info(f"Cluster analysis for folder {folder_name}")
         metadata = {}
-        input_folder = self.sanitize_folder_name(os.path.join(self.data_access.input_folder, folder_name))
+        input_folder = TransformUtils.clean_path(os.path.join(self.data_access.input_folder, folder_name))
         files, retries = self.data_access.get_folder_files(
             path=input_folder,
             extensions=[".parquet"],
@@ -125,17 +131,17 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
             segment = int(match.group(2))
         else:
             raise ValueError(f"Wrong folder_name {folder_name}, should be band=b/segment=s")
-        output_folder = self.sanitize_folder_name(self.data_access.output_folder)
+        output_folder = TransformUtils.clean_path(self.data_access.output_folder)
         output_path = os.path.join(output_folder, f"band_{band}_segment_{segment}.parquet")
 
         # consolidate into a single data frame band hashes computed by workers
-        band_segment_dataframe, consolidation_stats = self.consolidate_band_segment_files(files)
+        band_segment_dataframe, consolidation_stats = self._consolidate_band_segment_files(files)
         metadata |= consolidation_stats
         # cluster grouping by band hashes
-        cluster_dataframe, cluster_stats = self.get_clusters(band_segment_dataframe)
+        cluster_dataframe, cluster_stats = self._get_clusters(band_segment_dataframe)
         metadata |= cluster_stats
         # cluster analysis using jaccard similarity
-        jaccard_cluster_dataframe, jaccard_stats = self.analyze_clusters(cluster_dataframe)
+        jaccard_cluster_dataframe, jaccard_stats = self._analyze_clusters(cluster_dataframe)
         metadata |= jaccard_stats
         # Generate the docs_to_remove dataframe
         docs_to_remove_dataframe = jaccard_cluster_dataframe.explode("docs_to_remove")
@@ -144,14 +150,7 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
         metadata |= {"num_duplicate_documents": len(docs_to_remove_dataframe)}
         return [(output_data, output_path)], metadata
 
-    def sanitize_folder_name(self, folder_name: str) -> str:
-        if "://" in folder_name:
-            _, folder_name = folder_name.split("://")
-        if folder_name[-1] != "/":
-            folder_name = f"{folder_name}/"
-        return folder_name
-
-    def consolidate_band_segment_files(self, files: dict[str, bytes]) -> tuple[pl.DataFrame, dict[str, Any]]:
+    def _consolidate_band_segment_files(self, files: dict[str, bytes]) -> tuple[pl.DataFrame, dict[str, Any]]:
         band_segment_dataframe = pl.DataFrame()
         total_input_rows = 0
         for fname, contents in files.items():
@@ -170,7 +169,7 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
         }
         return band_segment_dataframe, consolidation_stats
 
-    def get_clusters(self, band_segment_dataframe: pl.DataFrame) -> tuple[pl.DataFrame, dict[str, Any]]:
+    def _get_clusters(self, band_segment_dataframe: pl.DataFrame) -> tuple[pl.DataFrame, dict[str, Any]]:
         groupby_dataframe = band_segment_dataframe.group_by("band_hash").agg("document_data")
         cluster_dataframe = groupby_dataframe.with_columns(cluster_length=pl.col("document_data").list.len()).filter(
             pl.col("cluster_length") > 1
@@ -195,14 +194,14 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
         }
         return cluster_dataframe, cluster_stats
 
-    def analyze_clusters(self, df: pl.DataFrame) -> tuple[pl.DataFrame, dict[str, Any]]:
+    def _analyze_clusters(self, df: pl.DataFrame) -> tuple[pl.DataFrame, dict[str, Any]]:
         # Define the schema with specific data types
         schema = {"first_doc": pl.Int64, "docs_to_remove": pl.List(pl.Int64), "docs_to_remove_length": pl.Int64}
         doc_ids_lists = []
         docs_to_remove_lists = []
         len_of_docs2remove_lists = []
         for row in df.iter_rows(named=True):
-            doc_ids_list, docs_to_remove_list, len_of_docs2remove_list = self.jaccard_distance_calculation(row)
+            doc_ids_list, docs_to_remove_list, len_of_docs2remove_list = self._jaccard_distance_calculation(row)
             doc_ids_lists += doc_ids_list
             docs_to_remove_lists += docs_to_remove_list
             len_of_docs2remove_lists += len_of_docs2remove_list
@@ -236,7 +235,7 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
             filtered_jaccard_dataframe = filtered_jaccard_dataframe.sort(by="first_doc")
         return filtered_jaccard_dataframe, jaccard_stats
 
-    def jaccard_distance_calculation(self, row: List[pl.Series]) -> list[list]:
+    def _jaccard_distance_calculation(self, row: List[pl.Series]) -> list[list]:
         # Process row and return a new list of Series or a new row
         threshold = self.jaccard_similarity_threshold
         doc_ids_list = []
@@ -321,7 +320,7 @@ class ClusterAnalysisTransformConfiguration(TransformConfiguration):
             f"--{sort_output_cli_param}",
             type=bool,
             default=sort_output_default,
-            help="Sort",
+            help="Sort the similarity clusters by the document ID of the kept doc (used primarily for testing)",
         )
 
     def apply_input_params(self, args: Namespace) -> bool:

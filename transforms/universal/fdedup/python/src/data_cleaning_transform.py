@@ -12,14 +12,13 @@
 import io
 import os
 from argparse import ArgumentParser, Namespace
-from typing import Any, List, Tuple
+from typing import Any
 
-import numpy as np
 import polars as pl
 import pyarrow as pa
 from data_processing.data_access import DataAccessFactory
 from data_processing.transform import AbstractTableTransform, TransformConfiguration
-from data_processing.utils import CLIArgumentProvider, ParamsUtils, get_logger
+from data_processing.utils import CLIArgumentProvider, get_logger
 
 
 short_name = "fdclean"
@@ -69,8 +68,9 @@ class DataCleaningTransform(AbstractTableTransform):
     keeps the directory structure of the input dataset, but has all the fuzzy
     duplicates removed.
 
-    Args:
-        duplicate_location: location (local or s3) of the duplicate document list
+    The following internal variables are initialized from the config dictionary:
+        duplicate_list_location: location (local or s3) of the duplicate document list
+        operation_mode: one of annotate, filter_duplicates, or filter_non_duplicates
     """
 
     def __init__(self, config: dict[str, Any]):
@@ -90,7 +90,7 @@ class DataCleaningTransform(AbstractTableTransform):
         self.docs_to_remove_df = self.docs_to_remove_df.rename({"docs_to_remove": self.document_id_column})
 
     def transform(self, table: pa.Table, file_name: str = None) -> tuple[list[pa.Table], dict[str, Any]]:
-        self.logger.info(f"Transforming table with {table.num_rows} rows from file {file_name}")
+        self.logger.debug(f"Transforming table with {table.num_rows} rows from file {file_name}")
         input_df = pl.from_arrow(table)
         # handle the case when the doc_id columns in the input dataframe and the
         # docs_to_remove_df  have different types, i.e. one is int32 and the

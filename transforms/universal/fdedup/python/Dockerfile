@@ -24,9 +24,6 @@ COPY --chown=dpk:root requirements.txt requirements.txt
 RUN pip install --no-cache-dir -e .
 
 # copy source data
-COPY src/ src/
-
-# copy source data
 COPY ./src/fdedup_transform_python.py fdedup_transform_python.py
 COPY ./src/fdedup_transform_python.py local/
 

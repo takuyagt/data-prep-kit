@@ -14,7 +14,7 @@ import re
 import unicodedata
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 import mmh3
 import numpy as np
@@ -22,7 +22,7 @@ import polars as pl
 import pyarrow as pa
 from data_processing.data_access import DataAccessFactory
 from data_processing.transform import AbstractTableTransform, TransformConfiguration
-from data_processing.utils import CLIArgumentProvider
+from data_processing.utils import CLIArgumentProvider, UnrecoverableException
 from Murmur_MH import Murmur_MH
 
 
@@ -129,16 +129,13 @@ class SignatureCalculationTransform(AbstractTableTransform):
     """
     This is the first transform of the fuzzy dedup pipeline. First, it calculates,
     for each document in a dataset, `num_permutations` minhashes.  It accepts as
-    input the number of bands and the length of each band.  If those two parameters
-    are not specified, then, based on the values of `jaccard_similarity_threshold`
-    and `num_permutations`, it determines the optimal number of bands, and the
-    length of each band (how many minhashes will be used to get the signature for
-    each band). The band signatures, the minhashes and the document lengths are
+    input the number of bands and the length (number of minhashes used for) each
+    band. The band signatures, the minhashes and the document lengths are
     then saved in the output folder, under a folder structure `bands/band=b/segment=s`.
     To improve scalability of the next step of fuzzy dedup, the hash space of
     each band is divided into `num_segments` segments.
 
-    Args:
+    The following internal variables are retrieved from the config parameter:
         document_id_column: name of the column storing the unique ID assigned to each document
         contents_column_cli_param: name of the column storing the contents of each document
         seed: the seed used to instantiate the random number generator
@@ -171,21 +168,22 @@ class SignatureCalculationTransform(AbstractTableTransform):
         self.num_rows = config.get(num_minhashes_per_band_key, num_minhashes_per_band_default)
         self.shingle_option = config.get(shingle_option_key, shingle_option_default)
         # use this dataframe to store the minhashes and size for each document
-        self.all_minhashes: pl.DataFrame = None
+        self.all_minhashes = None
         # use this dataframe to store the band hashes for each document
-        self.all_band_hashes: pl.DataFrame = None
+        self.all_band_hashes = None
         # this variable keeps track of how many files were processed since last
         # data write to properly update metadata
         self.files_processed = 0
         self.bytes_processed = 0
         self.data_access = config.get("data_access")
+        if self.data_access is None:
+            raise UnrecoverableException("Could not get a pointer to the data access object inside the transform.")
         self.last_file_name = None
+
         self.sc_data_access = config.get(sigcalc_data_access_key, None)
-        if self.sc_data_access is None:
-            self.sc_daf = config.get(sigcalc_data_factory_key, None)
-            if self.sc_daf is None:
-                raise RuntimeError(f"Missing configuration value for key {sigcalc_data_factory_key}")
-            self.sc_data_access = self.sc_daf.create_data_access()
+        self.sc_daf = config.get(sigcalc_data_factory_key, None)
+        if self.sc_daf is None:
+            raise RuntimeError(f"Missing configuration value for key {sigcalc_data_factory_key}")
 
     def transform(self, table: pa.Table, file_name: str = None) -> tuple[list[pa.Table], dict[str, Any]]:
         """
@@ -194,7 +192,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
         This implementation makes no modifications so effectively implements a copy of the
         input parquet to the output folder, without modification.
         """
-        self.logger.info(f"Transforming table with {table.num_rows} rows from file {file_name}")
+        self.logger.debug(f"Transforming table with {table.num_rows} rows from file {file_name}")
         self.logger.debug("----minhash---")
         self.last_file_name = file_name
         self.files_processed += 1
@@ -226,7 +224,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
             self.all_minhashes = self.all_minhashes.vstack(minhashes)
 
         # Calculate band hashes
-        band_hashes_list = self.process_rows_into_bands(
+        band_hashes_list = self._process_rows_into_bands(
             minhashes,
             self.num_bands,
             self.num_rows,
@@ -247,7 +245,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
             self.all_band_hashes = self.all_band_hashes.vstack(band_hashes)
 
         if len(self.all_minhashes) > 750000:
-            tables, metadata = self.write_band_signatures()
+            tables, metadata = self._write_band_signatures()
         else:
             tables = []
             metadata = {}
@@ -266,14 +264,16 @@ class SignatureCalculationTransform(AbstractTableTransform):
         """
         self.logger.info(f"Starting flush()")
         if self.all_band_hashes is not None and self.all_minhashes is not None:
-            tables, metadata = self.write_band_signatures()
+            tables, metadata = self._write_band_signatures()
         else:
             tables = []
             metadata = {}
         return tables, metadata
 
-    def write_band_signatures(self):
+    def _write_band_signatures(self):
         # define the upper and lower bounds of each band segment
+        if self.sc_data_access is None:
+            self.sc_data_access = self.sc_daf.create_data_access()
         segment_bounds_list = []
         upper_bound = np.uint64(np.iinfo(np.uint64).max)
         segment_len = np.uint64(upper_bound // self.num_segments)
@@ -325,7 +325,6 @@ class SignatureCalculationTransform(AbstractTableTransform):
                 self.logger.debug(f"band {band_ix} segment {segment_index} encapsulated document info in a structure")
 
                 # append the table to the result list, and the path to metadata
-                common_path = os.path.commonpath([self.data_access.input_folder, self.last_file_name])
                 last_file_name_path = Path(self.last_file_name)
                 suffix_path = last_file_name_path.relative_to(self.data_access.input_folder)
                 if self.sc_data_access.output_folder is None:
@@ -389,7 +388,7 @@ class SignatureCalculationTransform(AbstractTableTransform):
             k_shingles.append(delimiter.join(words[i : i + window_size]))
         return k_shingles, doc_len, document_id
 
-    def emit_bands(self, int_id_column: str, minhashes: np.array, doc_length: int, b: int, r: int, seed: int = 42):
+    def _emit_bands(self, int_id_column: str, minhashes: np.array, b: int, r: int, seed: int = 42):
         num_minhashes = len(minhashes)
         assert b * r <= num_minhashes, f"b*r must be <= num minhashes, was b={b}, r={r}, num_minhashes={num_minhashes}"
         results = []
@@ -403,13 +402,12 @@ class SignatureCalculationTransform(AbstractTableTransform):
         return results
 
     # Apply the function
-    def process_rows_into_bands(self, df, minhashlsh_num_bands, minhashlsh_length_band):
+    def _process_rows_into_bands(self, df, minhashlsh_num_bands, minhashlsh_length_band):
         result = []
         for row in df.iter_rows():
-            bands = self.emit_bands(
+            bands = self._emit_bands(
                 row[0],  # document id
                 np.array(row[1], dtype=np.uint32),  # minhashes
-                row[2],  # document length
                 minhashlsh_num_bands,
                 minhashlsh_length_band,
             )

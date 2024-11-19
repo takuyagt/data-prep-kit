@@ -40,5 +40,5 @@ class SignatureCalculationPythonTransformConfiguration(PythonTransformRuntimeCon
 
 if __name__ == "__main__":
     launcher = PythonTransformLauncher(SignatureCalculationTransformConfiguration())
-    logger.info("Launching noop transform")
+    logger.info("Launching fuzzy dedup signature calculation transform")
     launcher.launch()
