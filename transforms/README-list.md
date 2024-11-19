@@ -36,8 +36,13 @@ Note: This list includes the transforms that were part of the release starting w
 	* [tokenization](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/tokenization/python/README.md)
 	* [doc_id](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/doc_id/python/README.md)
 	* [web2parquet](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/web2parquet/README.md)
+   
+## Release notes:
 
-	
+### 0.2.2.dev3 
+* web2parquet
+### 0.2.2.dev2
+* pdf2parquet now supports HTML,DOCX,PPTX, ... in addition to PDF
 
 
 

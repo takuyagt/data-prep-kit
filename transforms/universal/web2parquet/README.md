@@ -21,16 +21,24 @@ For configuring the crawl, users need to specify the following parameters:
 
 The transform can be installed directly from pypi and has a dependency on the data-prep-toolkit and the data-prep-connector
 
+Set up the local environment to run Jupyter notebook:
+```
+python -v venv venv
+source venv/bin/activate
+pip install jupyter lab
+```
+Install pre-requisites:
+
 ```
 pip install data-prep-connector
 pip install data-prep-toolkit>=0.2.2.dev2
-pip install data-prep-toolkit-transform[web2parquet]>=0.2.2.dev3
+pip install 'data-prep-toolkit-transforms[web2parquet]>=0.2.2.dev3'
 ```
 
 If working from a fork in the git repo, from the root folder of the git repo, do the following:
 
 ```
-cd transform/universal/web2parquet
+cd transforms/universal/web2parquet
 make venv
 source venv/bin/activate
 pip install -r requirements.txt
