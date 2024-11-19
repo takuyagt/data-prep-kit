@@ -1,24 +1,54 @@
-# html2parquet Transform 
+# HTML to Parquet Transform
 
-This tranforms iterate through zip of HTML files or single HTML files and generates parquet files containing the converted document in string.
+---
 
-The HTML conversion is using the [Trafilatura](https://trafilatura.readthedocs.io/en/latest/usage-python.html).
+## Description
 
-## Output format
+This transform iterates through zipped collections of HTML files or single HTML files and generates Parquet files containing the extracted content, leveraging the [Trafilatura library](https://trafilatura.readthedocs.io/en/latest/usage-python.html) for extraction of text, tables, images, and other components.
 
-The output format will contain the following colums
+---
+
+## Contributors
+
+- Sungeun An (sungeun.an@ibm.com)
+- Syed Zawad (szawad@ibm.com)
+
+---
+
+## Date
+
+**Last updated:** 10/16/24  
+- **Update details:**
+  - Added Trafilatura parameters (`favor_precision` and `favor_recall`) for enhanced control over content extraction.
+  - Enhanced table and image extraction features.  
+  - See [Pull Request #707](https://github.com/IBM/data-prep-kit/pull/707) for more details.
+
+---
+
+## Input and Output
+
+### Input
+- Accepted Formats: Single HTML files or zipped collections of HTML files.  
+- Sample Input Files: [sample html files](https://github.com/IBM/data-prep-kit/tree/dev/transforms/language/html2parquet/python/test-data/input)  
+
+### Output
+- Format: Parquet files with the following structure:
 
 ```jsonc
 {
-	"title": "string",             // the member filename
-	"document": "string",          // the base of the source archive
-	"contents": "string",          // the content of the HTML
+    "title": "string",             // the member filename
+    "document": "string",          // the base of the source archive
+    "contents": "string",          // the content of the HTML
     "document_id": "string",      // the document id, a hash of `contents`
     "size": "string",             // the size of `contents`
     "date_acquired": "date",      // the date when the transform was executing
 }
 ```
+
+
 ## Parameters
+
+### User-Configurable Parameters
 
 The table below provides the parameters that users can adjust to control the behavior of the extraction:
 
@@ -27,6 +57,8 @@ The table below provides the parameters that users can adjust to control the beh
 | `output_format`    | `markdown` | Specifies the format of the extracted content. Options: `markdown`, `txt`.  |
 | `favor_precision`  | `True`     | Prefers less content but more accurate extraction. Options: `True`, `False`. |
 | `favor_recall`     | `True`     | Extracts more content when uncertain. Options: `True`, `False`.              |
+
+### Default Parameters
 
 The table below provides the parameters that are enabled by default to ensure a comprehensive extraction process:
 
@@ -42,6 +74,7 @@ The table below provides the parameters that are enabled by default to ensure a 
 - To set the output format to plain text, use `output_format='txt'`.
 - To prioritize extracting more content over accuracy, set `favor_recall=True` and `favor_precision=False`.
 - When invoking the CLI, use the following syntax for these parameters: `--html2parquet_<parameter_name>`. For example: `--html2parquet_output_format='markdown'`.
+
 
 ## Example
 
@@ -155,3 +188,57 @@ Chicago |
 ## Contact Us
 ```
 
+## Usage
+
+### Command-Line Interface (CLI)
+
+Run the transform with the following command:
+
+```
+python ../html2parquet/python/src/html2parquet_transform_python.py \
+  --data_local_config "{'input_folder': '../html2parquet/python/test-data/input', 'output_folder': '../html2parquet/python/test-data/expected'}" \
+  --data_files_to_use '[".html", ".zip"]'
+```
+
+- When invoking the CLI, use the following syntax for these parameters: `--html2parquet_<parameter_name>`. For example: `--html2parquet_output_format='markdown'`.
+
+### Python Code
+
+To run the transform programmatically:
+
+```
+from data_processing.runtime.pure_python import PythonTransformLauncher
+from data_processing.utils import ParamsUtils
+
+from html2parquet_transform_python import Html2ParquetPythonTransformConfiguration
+import ast
+import sys
+
+# create parameters
+local_conf = {
+    "input_folder": "input",
+    "output_folder": "output",
+}
+
+params = {
+    # Data access. Only required parameters are specified
+    "data_local_config": ParamsUtils.convert_to_ast(local_conf),
+    "data_files_to_use": ast.literal_eval("['.html']"),
+}
+
+sys.argv = ParamsUtils.dict_to_req(d=(params))
+# create launcher
+launcher = PythonTransformLauncher(Html2ParquetPythonTransformConfiguration())
+# launch
+return_code = launcher.launch()
+
+```
+
+### Sample Notebook
+
+See the [sample notebook](https://github.com/IBM/data-prep-kit/tree/dev/transforms/language/html2parquet/notebooks/html2parquet.ipynb) for an example.
+
+
+## Further Resources
+
+- [Trafilatura](https://trafilatura.readthedocs.io/en/latest/usage-python.html).
