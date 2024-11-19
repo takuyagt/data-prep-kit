@@ -39,7 +39,7 @@ shingles.
 `num_minhashes_per_band` minhashes. For each document, generate a unique signature for every band.
 
 The values for `num_bands` and `num_minhashes_per_band` determine the likelihood that documents with a certain Jaccard
-similarity will be marked as duplicates. A Jupyter notebook in the [utils](utils) folder generates a graph of this
+similarity will be marked as duplicates. A Jupyter notebook in the [utils](../utils) folder generates a graph of this
 probability function, helping users explore how different settings for `num_bands` and `num_minhashes_per_band` impact
 the deduplication process.
 
