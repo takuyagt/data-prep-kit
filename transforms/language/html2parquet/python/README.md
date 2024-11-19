@@ -202,37 +202,6 @@ python ../html2parquet/python/src/html2parquet_transform_python.py \
 
 - When invoking the CLI, use the following syntax for these parameters: `--html2parquet_<parameter_name>`. For example: `--html2parquet_output_format='markdown'`.
 
-### Python Code
-
-To run the transform programmatically:
-
-```
-from data_processing.runtime.pure_python import PythonTransformLauncher
-from data_processing.utils import ParamsUtils
-
-from html2parquet_transform_python import Html2ParquetPythonTransformConfiguration
-import ast
-import sys
-
-# create parameters
-local_conf = {
-    "input_folder": "input",
-    "output_folder": "output",
-}
-
-params = {
-    # Data access. Only required parameters are specified
-    "data_local_config": ParamsUtils.convert_to_ast(local_conf),
-    "data_files_to_use": ast.literal_eval("['.html']"),
-}
-
-sys.argv = ParamsUtils.dict_to_req(d=(params))
-# create launcher
-launcher = PythonTransformLauncher(Html2ParquetPythonTransformConfiguration())
-# launch
-return_code = launcher.launch()
-
-```
 
 ### Sample Notebook
 
