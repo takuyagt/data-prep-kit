@@ -18,10 +18,7 @@ This transform iterates through zipped collections of HTML files or single HTML 
 ## Date
 
 **Last updated:** 10/16/24  
-- **Update details:**
-  - Added Trafilatura parameters (`favor_precision` and `favor_recall`) for enhanced control over content extraction.
-  - Enhanced table and image extraction features.  
-  - See [Pull Request #707](https://github.com/IBM/data-prep-kit/pull/707) for more details.
+**Update details:** Enhanced table and image extraction features by adding the corresponding Trafilatura parameters.
 
 ---
 
@@ -29,7 +26,7 @@ This transform iterates through zipped collections of HTML files or single HTML 
 
 ### Input
 - Accepted Formats: Single HTML files or zipped collections of HTML files.  
-- Sample Input Files: [sample html files](https://github.com/IBM/data-prep-kit/tree/dev/transforms/language/html2parquet/python/test-data/input)  
+- Sample Input Files: [sample html files](test-data/input) 
 
 ### Output
 - Format: Parquet files with the following structure:
@@ -205,7 +202,8 @@ python ../html2parquet/python/src/html2parquet_transform_python.py \
 
 ### Sample Notebook
 
-See the [sample notebook](https://github.com/IBM/data-prep-kit/tree/dev/transforms/language/html2parquet/notebooks/html2parquet.ipynb) for an example.
+See the [sample notebook](../notebooks/html2parquet.ipynb)
+) for an example.
 
 
 ## Further Resources
