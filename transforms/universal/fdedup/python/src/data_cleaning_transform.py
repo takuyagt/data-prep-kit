@@ -86,7 +86,7 @@ class DataCleaningTransform(AbstractTableTransform):
         self.operation_mode = config.get(operation_mode_key, operation_mode_default)
         contents = config.get("df")
         self.docs_to_remove_df = pl.read_parquet(io.BytesIO(contents))
-        self.logger.info(f"Got docs_to_remove_df with {len(self.docs_to_remove_df)} rows")
+        self.logger.debug(f"Got docs_to_remove_df with {len(self.docs_to_remove_df)} rows")
         self.docs_to_remove_df = self.docs_to_remove_df.rename({"docs_to_remove": self.document_id_column})
 
     def transform(self, table: pa.Table, file_name: str = None) -> tuple[list[pa.Table], dict[str, Any]]:

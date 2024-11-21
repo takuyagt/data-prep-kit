@@ -115,7 +115,7 @@ class ClusterAnalysisTransform(AbstractFolderTransform):
         self.logger = get_logger(__name__)
 
     def transform(self, folder_name: str) -> tuple[list[tuple[bytes, str]], dict[str, Any]]:
-        self.logger.info(f"Cluster analysis for folder {folder_name}")
+        self.logger.debug(f"Cluster analysis for folder {folder_name}")
         metadata = {}
         input_folder = TransformUtils.clean_path(os.path.join(self.data_access.input_folder, folder_name))
         files, retries = self.data_access.get_folder_files(
