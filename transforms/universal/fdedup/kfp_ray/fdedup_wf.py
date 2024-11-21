@@ -115,22 +115,23 @@ def fuzzydedup(
     ray_name: str = "fuzzydedup-kfp-ray",  # name of Ray cluster
     # Add image_pull_secret and image_pull_policy to ray workers if needed
     ray_head_options: dict = {
-        "cpu": 1,
-        "memory": 4,
+        "cpu": 8,
+        "memory": 64,
         "image": task_image,
         "image_pull_secret": image_pull_secret,
         "imagePullPolicy": "Always",
     },
     ray_worker_options: dict = {
-        "replicas": 2,
-        "max_replicas": 2,
-        "min_replicas": 2,
-        "cpu": 2,
-        "memory": 4,
+        "replicas": 10,
+        "max_replicas": 10,
+        "min_replicas": 10,
+        "cpu": 16,
+        "memory": 128,
         "image": task_image,
         "image_pull_secret": image_pull_secret,
         "imagePullPolicy": "Always",
     },
+    runtime_actor_options: dict = {"num_cpus": 0.8, "memory": 16},
     server_url: str = "http://kuberay-apiserver-service.kuberay.svc.cluster.local:8888",
     # data access. checkpointing is not supported by dedup
     data_s3_config: str = "{'input_folder': 's3://cos-llm-pile-south/spark_test/fd_xs_dataset_test/', 'output_folder': 's3://cos-llm-pile-south/spark_test/fuzzy_dedup_test_output_data/kfp_test_1/'}",
@@ -153,10 +154,6 @@ def fuzzydedup(
     fdedup_shingle_option: str = "word",
     fdedup_jaccard_similarity_threshold: float = 0.75,
     fdedup_seed: int = 42,
-    fdedup_docs_to_remove_folder: str = "docs_to_remove",
-    fdedup_duplicate_list_location: str = os.path.join(
-        "docs_to_remove_consolidated", "docs_to_remove_consolidated.parquet"
-    ),
     fdedup_operation_mode: str = "annotate",
     # data sampling
     fdedup_n_samples: int = 10,
@@ -206,8 +203,6 @@ def fuzzydedup(
     :param fdedup_shingle_option - type of shingle, one of 'word', or 'char'
     :param fdedup_jaccard_similarity_threshold - similarity threshold
     :param fdedup_seed - seed for the random number generator
-    :param fdedup_docs_to_remove_folder - name of the subfolder holding the duplicate doc ids
-    :param fdedup_duplicate_list_location - name of the file holding the consolidated list of duplicates
     :param fdedup_operation_mode - data cleaning mode, one of 'filter_duplicates', 'filter_non_duplicates', or 'annotate'
     :param fdedup_n_samples - number of samples for parameters computation
     :return: None
@@ -222,6 +217,7 @@ def fuzzydedup(
         # compute execution params
         compute_common_exec_params = compute_common_params_op(
             worker_options=ray_worker_options,
+            actor_options=runtime_actor_options,
             data_s3_config=data_s3_config,
             num_permutations=fdedup_num_permutations,
             n_samples=fdedup_n_samples,
@@ -229,8 +225,9 @@ def fuzzydedup(
         ComponentUtils.add_settings_to_component(compute_common_exec_params, ONE_HOUR_SEC * 2)
         ComponentUtils.set_s3_env_vars_to_component(compute_common_exec_params, data_s3_access_secret)
         fdedup_num_segments = compute_common_exec_params.outputs["num_segments"]
-        runtime_actor_cpus = compute_common_exec_params.outputs["cpus_per_actor"]
         runtime_num_actors = compute_common_exec_params.outputs["num_actors"]
+        runtime_actor_cpus = compute_common_exec_params.outputs["actor_cpu"]
+        runtime_actor_memory = compute_common_exec_params.outputs["actor_memory"]
 
         # start Ray cluster
         ray_cluster = create_ray_op(
@@ -246,8 +243,9 @@ def fuzzydedup(
 
         # Get the parameters for the signature calculation job
         compute_signature_calc_exec_params = compute_signature_calc_exec_params_op(
-            runtime_actor_cpus=runtime_actor_cpus,
             runtime_num_actors=runtime_num_actors,
+            runtime_actor_cpus=runtime_actor_cpus,
+            runtime_actor_memory=runtime_actor_memory,
             data_s3_config=data_s3_config,
             data_max_files=data_max_files,
             data_num_samples=data_num_samples,
@@ -289,8 +287,9 @@ def fuzzydedup(
 
         # Get the parameters for the cluster analysis job
         compute_cluster_analysis_exec_params = compute_cluster_analysis_exec_params_op(
-            runtime_actor_cpus=runtime_actor_cpus,
             runtime_num_actors=runtime_num_actors,
+            runtime_actor_cpus=runtime_actor_cpus,
+            runtime_actor_memory=runtime_actor_memory,
             data_s3_config=data_s3_config,
             data_max_files=data_max_files,
             data_num_samples=data_num_samples,
@@ -319,16 +318,15 @@ def fuzzydedup(
         execute_cluster_analysis_job.after(compute_cluster_analysis_exec_params)
 
         compute_get_duplicate_list_exec_params = compute_get_duplicate_list_exec_params_op(
-            runtime_actor_cpus=runtime_actor_cpus,
             runtime_num_actors=runtime_num_actors,
+            runtime_actor_cpus=runtime_actor_cpus,
+            runtime_actor_memory=runtime_actor_memory,
             data_s3_config=data_s3_config,
             data_max_files=data_max_files,
             data_num_samples=data_num_samples,
             runtime_pipeline_id=runtime_pipeline_id,
             runtime_job_id=run_id,
             runtime_code_location=runtime_code_location,
-            duplicate_docids_folder=fdedup_docs_to_remove_folder,
-            duplicate_list_location=fdedup_duplicate_list_location,
         )
         ComponentUtils.add_settings_to_component(compute_get_duplicate_list_exec_params, ONE_HOUR_SEC * 2)
         compute_get_duplicate_list_exec_params.after(execute_cluster_analysis_job)
@@ -348,8 +346,9 @@ def fuzzydedup(
         execute_get_duplicate_list_job.after(compute_get_duplicate_list_exec_params)
 
         compute_data_cleaning_exec_params = compute_data_cleaning_exec_params_op(
-            runtime_actor_cpus=runtime_actor_cpus,
             runtime_num_actors=runtime_num_actors,
+            runtime_actor_cpus=runtime_actor_cpus,
+            runtime_actor_memory=runtime_actor_memory,
             data_s3_config=data_s3_config,
             data_max_files=data_max_files,
             data_num_samples=data_num_samples,
@@ -357,7 +356,6 @@ def fuzzydedup(
             runtime_job_id=run_id,
             runtime_code_location=runtime_code_location,
             id_column=fdedup_document_id_column,
-            duplicate_list_location=fdedup_duplicate_list_location,
             operation_mode=fdedup_operation_mode,
         )
         ComponentUtils.add_settings_to_component(compute_data_cleaning_exec_params, ONE_HOUR_SEC * 2)

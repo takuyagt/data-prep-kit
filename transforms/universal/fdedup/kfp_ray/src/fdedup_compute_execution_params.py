@@ -10,15 +10,27 @@
 # limitations under the License.
 ################################################################################
 
-from typing import Any, Dict, NamedTuple
+from typing import Any, NamedTuple
 
 
 def compute_common_params(
     worker_options: dict,  # ray worker configuration
+    actor_options: dict,  # actor desired configuration
     data_s3_config: str,  # S3 configuration
     num_permutations: int,  # number of permutations (minhashes) per document
     n_samples: int,  # files to sample for number of documents estimation
-) -> NamedTuple("fdedup_params", [("num_segments", int), ("num_actors", int), ("cpus_per_actor", float)]):
+) -> NamedTuple(
+    "fdedup_params", [("num_segments", int), ("num_actors", str), ("actor_cpu", float), ("actor_memory", int)]
+):
+    """
+    Compute fuzzy dedup execution parameters common to all the transforms
+    :param worker_options: worker group configuration
+    :param actor_options: desired actor configuration
+    :param data_s3_config: s3 configuration
+    :param num_permutations: number of permutations
+    :param n_samples: number of samples used to estimate the total number of documents in the dataset
+    :return: fdedup_params NamedTuple: num_segments - int, num_actors - str, cpus (float) and memory (int) per actor
+    """
 
     import sys
 
@@ -40,49 +52,45 @@ def compute_common_params(
         print(f"Estimated number of documents and documents size is zero. Please verify the input path.")
         sys.exit(1)
     print(f"Estimated number of docs: {number_of_docs}")
+    actor_cpu: float = actor_options.get("num_cpus", 1)  # if num_cpus not specified, request 1 CPU per actor
+    actor_memory: int = int(actor_options.get("memory", 16)) * GB  # if memory not specified, request 16 GB per actor
+    # Calculate the number of segments
     # Assume each document takes doc_bytes = (8 + num_permutations * 4 + 20) bytes, where:
     #   8 bytes are taken by the band hash
     #   (num_permutations * 4) bytes are taken by the min hashes
     #   20 bytes to provide some extra space for storage in a table
     # The total amount of space needed by a band is number_of_docs * doc_bytes.
-    # To scale the handling of this data, divide each band into segments, where each segment size is below 3GB
+    # To scale band handling, divide each band into segments, each smaller than 1/6 of an actor's allocated memory
     doc_bytes = 8 + num_permutations * 4 + 20
     band_bytes = number_of_docs * doc_bytes
-    num_segments = 1 + (band_bytes // (3 * GB))
+    num_segments = 1 + (band_bytes // (actor_memory // 6))
     print(f"Number of segments: {num_segments}")
 
-    # To process data efficiently, each actor needs 16GB of memory.
-    # The actor config controls CPU allocation, not memory;
-    # use CPU allocation s.t. the number of actors on a worker  provides access to 16GB of memory for each actor.
-    # Also, to keep S3 utilization in check, limit the number of actors to 2000
-    num_nodes = worker_options["replicas"]
-    cpu_per_node = worker_options["cpu"] - 1
-    memory_per_node = worker_options["memory"]
+    # Calculate number of actors, using KFPUtils.default_compute_execution_params()
+    # Create new dict with memory expressed in bytes, as expected by KFPUtils.default_compute_execution_params()
+    actor_config = {
+        "num_cpus": actor_cpu,
+        "memory": actor_memory,
+    }
+    num_actors = KFPUtils.default_compute_execution_params(str(worker_options), str(actor_config))
 
-    memory_per_actor = 16  # GB
-    max_num_actors = 2000
-    num_actors_per_node: int = int(memory_per_node / memory_per_actor)
-    if num_actors_per_node == 0:
-        num_actors_per_node = 1
-    # never run actors on the head node, so (n - 1) nodes to run actors
-    num_actors = (num_nodes - 1) * num_actors_per_node
-
-    while num_actors > max_num_actors:
-        num_actors -= num_nodes - 1
-        num_actors_per_node -= 1
-    print(f"Number of actors per node = {num_actors_per_node}")
-    cpus_per_actor = cpu_per_node / num_actors_per_node
-    print(f"CPUs per actor = {cpus_per_actor}")
-
+    print(f"num_actors = {num_actors}")
     from collections import namedtuple
 
-    fdedup_params = namedtuple("fdedup_params", ["num_segments", "num_actors", "cpus_per_actor"])
-    return fdedup_params(num_segments, num_actors, cpus_per_actor)
+    fdedup_params = namedtuple(
+        typename="fdedup_params",
+        field_names=["num_segments", "num_actors", "actor_cpu", "actor_memory"],
+    )
+    print(
+        f"num_segments = {num_segments}, num_actors = {num_actors}, actor_cpu = {actor_cpu}, actor_memory = {actor_memory}"
+    )
+    return fdedup_params(num_segments, num_actors, actor_cpu, actor_memory)
 
 
 def signature_calc_compute_execution_params(
-    runtime_actor_cpus: float,  # actor's CPU requirements
-    runtime_num_actors: int,  # number of actors needed to run this step
+    runtime_num_actors: str,  # number of actors computed by KFPUtils.default_compute_execution_params()
+    runtime_actor_cpus: float,  # number of CPUS needed for each actor
+    runtime_actor_memory: int,  # memory (in bytes) needed by each actor
     data_s3_config: str,  # s3 configuration
     data_max_files: int,  # max files to process
     data_num_samples: int,  # num samples to process
@@ -103,8 +111,9 @@ def signature_calc_compute_execution_params(
 
     """
     Compute fuzzy dedup execution parameters for signature calculation
-    :param runtime_actor_cpus: actor's CPU requirements
-    :param runtime_num_actors: number of actors to run this step
+    :param runtime_num_actors: number of actors computed by KFPUtils.default_compute_execution_params()
+    :param runtime_actor_cpus: number of CPUS needed for each actor
+    :param runtime_actor_memory: memory (in bytes) needed by each actor
     :param data_s3_config: s3 configuration
     :param data_max_files: max files to process
     :param data_num_samples: num samples to process
@@ -116,23 +125,22 @@ def signature_calc_compute_execution_params(
     :param num_permutations: number of permutations
     :param num_bands: number of bands
     :param num_minhashes_per_band: band length
-    :param word_shingle_size: number of words in shingle
+    :param word_shingle_size: number of words/chars in shingle
     :param shingle_option: str: type of shingle, one of 'word' or 'char'
     :param threshold: threshold,
     :param num_segments: number of segments
     :param seed: seed for the random number generator
-    :return: a dictionary with a Ray Job execution parameters
+    :return: dictionary with Ray Job execution parameters
     """
 
     # fuzzy parameters for signature calculation
-    runtime_actor_options: dict = {"num_cpus": runtime_actor_cpus}
-    print(f"runtime_actor_options = {runtime_actor_options}")
+    actor_options = {"num_cpus": runtime_actor_cpus, "memory": runtime_actor_memory}
     return {
         "data_s3_config": data_s3_config,
         "data_max_files": data_max_files,
         "data_num_samples": data_num_samples,
         "runtime_num_workers": runtime_num_actors,
-        "runtime_worker_options": str(runtime_actor_options),
+        "runtime_worker_options": str(actor_options),
         "runtime_pipeline_id": runtime_pipeline_id,
         "runtime_job_id": runtime_job_id,
         "runtime_code_location": str(runtime_code_location),
@@ -151,8 +159,9 @@ def signature_calc_compute_execution_params(
 
 
 def cluster_analysis_compute_execution_params(
-    runtime_actor_cpus: float,  # actor's CPU requirements
-    runtime_num_actors: int,  # number of actors needed to run this step
+    runtime_num_actors: str,  # number of actors computed by KFPUtils.default_compute_execution_params()
+    runtime_actor_cpus: float,  # number of CPUS needed for each actor
+    runtime_actor_memory: int,  # memory (in bytes) needed by each actor
     data_s3_config: str,  # s3 configuration
     data_max_files: int,  # max files to process
     data_num_samples: int,  # num samples to process
@@ -166,8 +175,9 @@ def cluster_analysis_compute_execution_params(
 
     """
     Compute fuzzy dedup execution parameters for cluster analysis
-    :param runtime_actor_cpus: actor's CPU requirements
-    :param runtime_num_actors: number of actors to run this step
+    :param runtime_num_actors: number of actors computed by KFPUtils.default_compute_execution_params()
+    :param runtime_actor_cpus: number of CPUS needed for each actor
+    :param runtime_actor_memory: memory (in bytes) needed by each actor
     :param data_s3_config: s3 configuration
     :param data_max_files: max files to process
     :param data_num_samples: num samples to process
@@ -189,13 +199,13 @@ def cluster_analysis_compute_execution_params(
     data_s3_config_dict["input_folder"] = os.path.join(base_folder, "bands")
     data_s3_config_dict["output_folder"] = os.path.join(base_folder, "docs_to_remove")
     data_s3_config = json.dumps(data_s3_config_dict).replace('"', "'")
-    runtime_actor_options: dict = {"num_cpus": runtime_actor_cpus}
+    actor_options = {"num_cpus": runtime_actor_cpus, "memory": runtime_actor_memory}
     return {
         "data_s3_config": data_s3_config,
         "data_max_files": data_max_files,
         "data_num_samples": data_num_samples,
         "runtime_num_workers": runtime_num_actors,
-        "runtime_worker_options": str(runtime_actor_options),
+        "runtime_worker_options": str(actor_options),
         "runtime_pipeline_id": runtime_pipeline_id,
         "runtime_job_id": runtime_job_id,
         "runtime_code_location": str(runtime_code_location),
@@ -206,47 +216,48 @@ def cluster_analysis_compute_execution_params(
 
 
 def get_duplicate_list_compute_execution_params(
-    runtime_actor_cpus: float,  # actor's CPU requirements
-    runtime_num_actors: int,  # number of actors needed to run this step
+    runtime_num_actors: str,  # number of actors computed by KFPUtils.default_compute_execution_params()
+    runtime_actor_cpus: float,  # number of CPUS needed for each actor
+    runtime_actor_memory: int,  # memory (in bytes) needed by each actor
     data_s3_config: str,  # s3 configuration
     data_max_files: int,  # max files to process
     data_num_samples: int,  # num samples to process
     runtime_pipeline_id: str,  # pipeline id
     runtime_job_id: str,  # job id
     runtime_code_location: dict,  # code location
-    duplicate_docids_folder: str,  # folder with the docs IDs to remove
-    duplicate_list_location: str,  # location of the list of duplicate doc ids
 ) -> dict:
     """
     Compute fuzzy dedup execution parameters for get duplicate list step
-    :param runtime_actor_cpus: actor's CPU requirements
-    :param runtime_num_actors: number of actors to run this step
+    :param runtime_num_actors: number of actors computed by KFPUtils.default_compute_execution_params()
+    :param runtime_actor_cpus: number of CPUS needed for each actor
+    :param runtime_actor_memory: memory (in bytes) needed by each actor
     :param data_s3_config: s3 configuration
     :param data_max_files: max files to process
     :param data_num_samples: num samples to process
     :param runtime_pipeline_id: pipeline id
     :param runtime_job_id: job id
     :param runtime_code_location: code location
-    :param duplicate_docids_folder: folder with the docs IDs to remove
-    :param duplicate_list_location: location of the list of duplicate doc ids
     :return: a dictionary with a Ray Job execution parameters
     """
     import json
+    import os
 
     # fuzzy parameters
+    duplicate_docids_folder: str = "docs_to_remove"
+    duplicate_list_location: str = os.path.join("docs_to_remove_consolidated", "docs_to_remove_consolidated.parquet")
     # Get cluster parameters
     data_s3_config_dict = json.loads(data_s3_config.replace("'", '"'))
     base_folder = data_s3_config_dict.get("output_folder")
     data_s3_config_dict["input_folder"] = base_folder
     data_s3_config_dict["output_folder"] = base_folder
     data_s3_config = json.dumps(data_s3_config_dict).replace('"', "'")
-    runtime_actor_options: dict = {"num_cpus": runtime_actor_cpus}
+    actor_options = {"num_cpus": runtime_actor_cpus, "memory": runtime_actor_memory}
     return {
         "data_s3_config": data_s3_config,
         "data_max_files": data_max_files,
         "data_num_samples": data_num_samples,
         "runtime_num_workers": runtime_num_actors,
-        "runtime_worker_options": str(runtime_actor_options),
+        "runtime_worker_options": str(actor_options),
         "runtime_pipeline_id": runtime_pipeline_id,
         "runtime_job_id": runtime_job_id,
         "runtime_code_location": str(runtime_code_location),
@@ -256,8 +267,9 @@ def get_duplicate_list_compute_execution_params(
 
 
 def data_cleaning_compute_execution_params(
-    runtime_actor_cpus: float,  # actor's CPU requirements
-    runtime_num_actors: int,  # number of actors needed to run this step
+    runtime_num_actors: str,  # number of actors computed by KFPUtils.default_compute_execution_params()
+    runtime_actor_cpus: float,  # number of CPUS needed for each actor
+    runtime_actor_memory: int,  # memory (in bytes) needed by each actor
     data_s3_config: str,  # s3 configuration
     data_max_files: int,  # max files to process
     data_num_samples: int,  # num samples to process
@@ -265,13 +277,13 @@ def data_cleaning_compute_execution_params(
     runtime_job_id: str,  # job id
     runtime_code_location: dict,  # code location
     id_column: str,  # integer document id column name
-    duplicate_list_location: str,  # location of the list of duplicate doc ids
     operation_mode: str,  # filter (non-)duplicates or annotate
 ) -> dict:
     """
     Compute fuzzy dedup execution parameters
-    :param runtime_actor_cpus: actor's CPU requirements
-    :param runtime_num_actors: number of actors to run this step
+    :param runtime_num_actors: number of actors computed by KFPUtils.default_compute_execution_params()
+    :param runtime_actor_cpus: number of CPUS needed for each actor
+    :param runtime_actor_memory: memory (in bytes) needed by each actor
     :param data_s3_config: s3 configuration
     :param data_max_files: max files to process
     :param data_num_samples: num samples to process
@@ -279,7 +291,6 @@ def data_cleaning_compute_execution_params(
     :param runtime_job_id: job id
     :param runtime_code_location: code location
     :param id_column: integer document id column name
-    :param duplicate_list_location: location of the list of duplicate doc ids
     :param operation_mode: filter (non-)duplicates or annotate
     :return: a dictionary with a Ray Job execution parameters
     """
@@ -298,13 +309,14 @@ def data_cleaning_compute_execution_params(
         output_subfolder = "annotated"
     data_s3_config_dict["output_folder"] = os.path.join(base_folder, output_subfolder)
     data_s3_config = json.dumps(data_s3_config_dict).replace('"', "'")
-    runtime_actor_options: dict = {"num_cpus": runtime_actor_cpus}
+    duplicate_list_location: str = os.path.join("docs_to_remove_consolidated", "docs_to_remove_consolidated.parquet")
+    actor_options = {"num_cpus": runtime_actor_cpus, "memory": runtime_actor_memory}
     return {
         "data_s3_config": data_s3_config,
         "data_max_files": data_max_files,
         "data_num_samples": data_num_samples,
         "runtime_num_workers": runtime_num_actors,
-        "runtime_worker_options": str(runtime_actor_options),
+        "runtime_worker_options": str(actor_options),
         "runtime_pipeline_id": runtime_pipeline_id,
         "runtime_job_id": runtime_job_id,
         "runtime_code_location": str(runtime_code_location),
