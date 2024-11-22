@@ -90,7 +90,7 @@ To see results of the transform.
 
 ### Code example
 
-TBD (link to the notebook will be provided)
+[notebook](../doc_quality.ipynb)
 
 ### Transforming data using the transform image
 
