@@ -254,7 +254,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--run_locally",
         type=lambda x: bool(str2bool(x)),
-        default=True,
+        default=False,
         help="run locally or connect to a remote machine",
     )
 
