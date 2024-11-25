@@ -147,6 +147,8 @@ class ServiceOrchestrator:
             if service_name == "fdclean":
                 sys_argv.append("--dcdata_s3_config")
                 sys_argv.append(ast_data_io)
+        if in_args.run_locally:
+            sys_argv.append(f"--run_locally={in_args.run_locally}")
         return sys_argv
 
     def execute_service(self, service_short_name: str, params: list) -> int:
@@ -240,12 +242,20 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="ast string of options for s3 credentials",
     )
+
     parser.add_argument(
         "--shingle_option",
         type=str,
         required=False,
         default="word",
         help="Option used for shingling",
+    )
+
+    parser.add_argument(
+        "--run_locally",
+        type=lambda x: bool(str2bool(x)),
+        default=True,
+        help="run locally or connect to a remote machine",
     )
 
     return parser.parse_args()
