@@ -44,6 +44,7 @@ all = { file = [
 "universal/hap/python/requirements.txt",
 "universal/tokenization/python/requirements.txt",
 "universal/ededup/python/requirements.txt",
+"universal/fdedup/python/requirements.txt",
 "universal/profiler/python/requirements.txt",
 "universal/doc_id/python/requirements.txt",
 "universal/filter/python/requirements.txt",
@@ -71,6 +72,7 @@ pdf2parquet = { file = ["language/pdf2parquet/python/requirements.txt"]}
 hap = { file = ["universal/hap/python/requirements.txt"]} 
 tokenization = { file = ["universal/tokenization/python/requirements.txt"]} 
 ededup = { file = ["universal/ededup/python/requirements.txt"]} 
+fdedup = { file = ["universal/fdedup/python/requirements.txt"]} 
 profiler = { file = ["universal/profiler/python/requirements.txt"]} 
 doc_id = { file = ["universal/doc_id/python/requirements.txt"]} 
 filter = { file = ["universal/filter/python/requirements.txt"]} 

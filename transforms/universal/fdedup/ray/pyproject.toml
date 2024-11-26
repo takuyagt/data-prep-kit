@@ -6,20 +6,16 @@ description = "fdedup Ray Transform"
 license = {text = "Apache-2.0"}
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [
-    { name = "David Wood", email = "dawood@us.ibm.com" },
-    { name = "Boris Lublinsky", email = "blublinsky@ibm.com" },
+    { name = "Nelson Bore", email = "k.nelsonbore@gmail.com" },
+    { name = "Constantin Adam", email = "cmadam@us.ibm.com" },
 ]
-dependencies = [
-    "data-prep-toolkit[ray]==0.2.3.dev0",
-    "mmh3>=4.1.0",
-    "xxhash==3.4.1",
-    "tqdm==4.66.3",
-    "scipy>=1.12.0, <2.0.0"
-]
+dynamic = ["dependencies"]
 
 [build-system]
 requires = ["setuptools>=68.0.0", "wheel", "setuptools_scm[toml]>=7.1.0"]
 build-backend = "setuptools.build_meta"
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
 
 [project.optional-dependencies]
 dev = [
