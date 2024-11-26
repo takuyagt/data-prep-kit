@@ -1,6 +1,6 @@
 [project]
 name = "data_prep_toolkit_transforms"
-version = "0.2.2.dev4"
+version = "0.2.3.dev0"
 requires-python = ">=3.10,<3.13"
 keywords = ["transforms", "data preprocessing", "data preparation", "llm", "generative", "ai", "fine-tuning", "llmapps" ]
 description = "Data Preparation Toolkit Transforms using Ray"
@@ -84,6 +84,9 @@ web2parquet = { file = ["universal/web2parquet/requirements.txt"]}
 
 #[tool.setuptools.package-data]
 #"*" = ["*.txt"]
+
+#[tool.setuptools.packages.find]
+#where = ["src"]
 
 #[tool.setuptools.package-dir]
 #dpk_web2parquet = "universal/web2parquet/dpk_web2parquet"
