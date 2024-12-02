@@ -1,6 +1,9 @@
 # Hate, Abuse, and Profanity (HAP) Annotation
 Please see the set of [transform project conventions](https://github.com/ian-cho/data-prep-kit/blob/dev/transforms/README.md) for details on general project conventions, transform configuration, testing and IDE set up.
 
+## Contributor
+- Yang Zhao (yangzhao@ibm.com)
+
 ## Description
 ### Prerequisite 
 This repository needs [NLTK](https://www.nltk.org/) and please refer to `requirements.txt`.
@@ -54,9 +57,7 @@ python hap_local_python.py
 You will obtain the output file `test1.parquet` in the output directory.
 
 ### Code example
-TBD (link to the notebook will be provided)
-
-See the sample script [src/hap_local_python.py](https://github.com/IBM/data-prep-kit/blob/dev/transforms/universal/hap/python/src/hap_local_python.py).
+[notebook](../hap_python.ipynb)
 
 ### Transforming data using the transform image
 To use the transform image to transform your data, please refer to the 
