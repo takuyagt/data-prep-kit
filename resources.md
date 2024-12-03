@@ -28,7 +28,7 @@
 12. IBM TechXchange Las Vegas
 13. Open Source [**RAG Pipeline workshop**](https://www.linkedin.com/posts/sujeemaniyam_dataprepkit-workshop-llm-activity-7256176802383986688-2UKc?utm_source=share&utm_medium=member_desktop) with Data Prep Kit at TechEquity's AI Summit in Silicon Valley
 14. **Data Science Dojo Meetup** - [video](https://datasciencedojo.com/tutorial/data-preparation-toolkit/)
-15. DPK tutorial and hands on session at IIIT Delhi
+15. [**DPK tutorial and hands on session at IIIT Delhi**](https://www.linkedin.com/posts/cai-iiitd-97a6a4232_datascience-datapipelines-machinel[…]565125349376-FG8E?utm_source=share&utm_medium=member_desktop)
 
 
 ## Example Code
