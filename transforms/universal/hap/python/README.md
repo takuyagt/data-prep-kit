@@ -57,7 +57,7 @@ python hap_local_python.py
 You will obtain the output file `test1.parquet` in the output directory.
 
 ### Code example
-[notebook](../hap_python.ipynb)
+[notebook](./hap_python.ipynb)
 
 ### Transforming data using the transform image
 To use the transform image to transform your data, please refer to the 
