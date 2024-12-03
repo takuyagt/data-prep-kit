@@ -28,7 +28,7 @@
 12. IBM TechXchange Las Vegas
 13. Open Source [**RAG Pipeline workshop**](https://www.linkedin.com/posts/sujeemaniyam_dataprepkit-workshop-llm-activity-7256176802383986688-2UKc?utm_source=share&utm_medium=member_desktop) with Data Prep Kit at TechEquity's AI Summit in Silicon Valley
 14. **Data Science Dojo Meetup** - [video](https://datasciencedojo.com/tutorial/data-preparation-toolkit/)
-15. [**DPK tutorial and hands on session at IIIT Delhi**](https://www.linkedin.com/posts/cai-iiitd-97a6a4232_datascience-datapipelines-machinel[%E2%80%A6]65125349376-FG8E/?utm_source=share&utm_medium=member_desktop)
+15. DPK tutorial and hands on session at IIIT Delhi
 
 
 ## Example Code
@@ -43,7 +43,7 @@ Find example code in readme section of each tranform and some sample jupyter not
 
 # Relevant online communities
 
-- [**Data Prep Kit Discord Channel**](https://discord.com/channels/1276554812359442504/1286046139921207476)
+- [**Data Prep Kit Discord Channel**](https://discord.com/channels/1276554812359442504/1303454647427661866)
 - [**DPK is now listed in Github Awesome-LLM under LLM Data section**](https://github.com/Hannibal046/Awesome-LLM)
 - [**DPK is now up for access via IBM Skills Build Download**](https://academic.ibm.com/a2mt/downloads/artificial_intelligence#/)
 - [**DPK added to the Application Hub of “AI Sustainability Catalog”**](https://enterprise-neurosystem.github.io/Sustainability-Catalog/)
