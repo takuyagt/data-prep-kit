@@ -10,13 +10,38 @@
 # limitations under the License.
 ################################################################################
 
+import concurrent.futures
+from functools import partial
+import multiprocessing
 import os
+import threading
 from typing import List
 
+import concurrent
 import pandas as pd
 import pyarrow as pa
 import ray
 from data_processing.utils import get_logger
+
+
+def _read_table_for_group(file, data_access=None, grouping_column=None, group=None):
+    logger = get_logger(__name__)
+    logger.info(f"[{threading.current_thread().name}] start reading table for group")
+    table, _ = data_access.get_table(os.path.normpath(file))
+    # filtering each table is more memory efficient than
+    # reading all tables and filtering later.
+    column_data = table.column(grouping_column)
+    row_mask = pa.compute.equal(column_data, group)
+    filtered_table = table.filter(row_mask)
+    logger.info(f"[{threading.current_thread().name}] end reading table for group")
+    return filtered_table.to_pandas()
+
+def _async_read_table_for_group(files, data_access=None, grouping_column=None, group=None):
+    """This function reads the files and filters the tables based on grouping_column value"""
+    func = partial(_read_table_for_group, data_access=data_access, grouping_column=grouping_column, group=group)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        futures = [executor.submit(_read_table_for_group, file, data_access, grouping_column, group) for file in files]
+    return pd.concat([future.result() for future in concurrent.futures.as_completed(futures)])
 
 
 class GroupByRepo:
@@ -34,6 +59,7 @@ class GroupByRepo:
         logger,
         data_access,
         table_mapper=None,
+        n_processes=1,
     ):
         self.repo_column_name = repo_column_name
         self.output_dir = output_dir
@@ -41,6 +67,7 @@ class GroupByRepo:
         self.data_access = data_access
         self.enable_superrows = True
         self.table_mapper = table_mapper
+        self.n_processes = n_processes
         if self.table_mapper is None:
             """
             table_mapper is a function of signature: func(table: pa.Table, filename: str)-> List[Tuple[pa.Table, filename]]:
@@ -54,7 +81,17 @@ class GroupByRepo:
 
     def process(self, repo: str, files: List[str]):
         try:
-            repo_table = self._read_table_for_group(self.repo_column_name, repo, files)
+            func = partial(_async_read_table_for_group, data_access=self.data_access, grouping_column=self.repo_column_name, group=repo)
+            with multiprocessing.get_context("spawn").Pool(processes=self.n_processes, maxtasksperchild=None) as pool:
+                results = list(
+                    pool.imap(
+                        func,
+                        self._chunks(files),
+                    )
+                )
+            df = pd.concat(results)
+            repo_table = pa.Table.from_pandas(df)
+
             if len(repo_table) == 0:
                 # not processing empty table
                 return
@@ -65,14 +102,32 @@ class GroupByRepo:
             repo = sanitize_path(repo)
             tables = self.table_mapper(repo_table, repo)
 
-            for out_table, filename in tables:
-
-                self.logger.info(f"Write {filename}, tables: {len(out_table)}")
-                self._write_parquet(out_table, filename)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                concurrent.futures.wait(
+                    [executor.submit(self._write_parquet, out_table, filename) for out_table, filename in tables]
+                )
         except Exception as e:
             self.logger.error(f"Failed processing repo: {repo}. {e}")
 
+    def _chunks(self, files):
+        n = len(files)
+        chunk_size = n // self.n_processes
+
+        chunks: list[list[str]] = []
+        i = 0
+        while i < self.n_processes:
+            if i == self.n_processes - 1:
+                remainder = n % self.n_processes
+            else:
+                remainder = 0
+            chunk = files[i * chunk_size : i * chunk_size + chunk_size + remainder]
+            chunks.append(list(chunk))
+            i += 1
+
+        return chunks
+
     def _write_parquet(self, table, repo_name):
+        self.logger.info(f"Write {repo_name}, tables: {len(table)}")
         # since we already know the repo
         # self.output_path should have the basepath where to write
         parquet_path = os.path.join(self.output_dir, f"{repo_name}.parquet")
@@ -134,4 +189,5 @@ class GroupByRepoActor(GroupByRepo):
             None,
             params["data_access_factory"].create_data_access(),
             params["mapper"],
+            params["n_processes"]
         )

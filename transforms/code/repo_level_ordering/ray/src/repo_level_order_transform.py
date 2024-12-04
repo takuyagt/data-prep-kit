@@ -318,6 +318,7 @@ class RepoLevelOrderRuntime(DefaultRayTransformRuntime):
             return {"nrepos": len(p_input)}
 
         repo_mapper_func = self._prepare_mapper_function()
+        n_processes = max(1, int(self.ray_num_cpus))
         processors = RayUtils.create_actors(
             clazz=GroupByRepoActor,
             params={
@@ -325,6 +326,7 @@ class RepoLevelOrderRuntime(DefaultRayTransformRuntime):
                 "output_dir": self.output_folder,
                 "data_access_factory": self.daf,
                 "mapper": repo_mapper_func,
+                "n_processes": n_processes,
             },
             actor_options={"num_cpus": self.ray_num_cpus},
             n_actors=self.ray_workers,
