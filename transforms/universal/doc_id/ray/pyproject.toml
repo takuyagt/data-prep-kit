@@ -11,7 +11,7 @@ authors = [
 ]
 dependencies = [
     "dpk_doc_id_transform_python==0.2.3.dev0",
-    "data-prep-toolkit[ray]==0.2.3.dev0",
+    "data-prep-toolkit[ray]>=0.2.3.dev0",
 ]
 
 [build-system]

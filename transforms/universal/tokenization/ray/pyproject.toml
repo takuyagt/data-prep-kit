@@ -10,7 +10,7 @@ authors = [
 ]
 dependencies = [
     "dpk-tokenization-transform-python==0.2.3.dev0",
-    "data-prep-toolkit[ray]==0.2.3.dev0",
+    "data-prep-toolkit[ray]>=0.2.3.dev0",
 ]
 
 [build-system]

@@ -209,7 +209,7 @@ __check_defined = \
 # We create both local and remote tags.  Local seems to be needed when using our spark
 # base image.  Remote seems to be needed by kfp.
 .PHONY: .defaults.image
-.defaults.image:: # Must be called with a DOCKER_IMAGE= settings.
+.defaults.image:: # Must be called with a DOCKER_IMAGE_NAME= settings.
 	@# Help: Create the docker image $(DOCKER_LOCAL_IMAGE) and a tag for $(DOCKER_REMOTE_IMAGE)
 	$(call check_defined, DOCKER_IMAGE_NAME)
 	# The following touch seems to be needed to work around a docker build problem in which
@@ -222,14 +222,15 @@ __check_defined = \
 	if [ -e pyproject.toml ]; then 	\
 		touch pyproject.toml;	\
 	fi
-	$(DOCKER) build -t $(DOCKER_LOCAL_IMAGE) $(DOCKER_BUILD_EXTRA_ARGS)	\
+	$(DOCKER) build -f $(DOCKER_FILE) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_VERSION) $(DOCKER_BUILD_EXTRA_ARGS)	\
 		--platform $(DOCKER_PLATFORM)  			\
 		--build-arg EXTRA_INDEX_URL=$(EXTRA_INDEX_URL)	\
 		--build-arg BASE_IMAGE=$(BASE_IMAGE)  		\
 		--build-arg DPK_WHEEL_FILE_NAME=$(DPK_WHEEL_FILE_NAME) \
 		--build-arg BUILD_DATE=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')  	\
 		--build-arg GIT_COMMIT=$(shell git log -1 --format=%h) . 
-	$(DOCKER) tag $(DOCKER_LOCAL_IMAGE)  $(DOCKER_REMOTE_IMAGE)
+	$(DOCKER) tag $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_VERSION) $(DOCKER_REGISTRY_ENDPOINT)/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_VERSION)
+
 
 # Copy a source tree in LIB_PATH, including src, pyproject.toml to LIB_NAME
 # Generally used to copy source from within the repo into a local directory for use by a Dockerfile
@@ -244,23 +245,24 @@ __check_defined = \
 	    cp -p ${LIB_PATH}/requirements.txt ${LIB_NAME};	\
 	fi
 	
-
-# Build and image using the local Dockerfile and make the data-processing-lib/python
-# available in the current directory for use by the Dockerfile (i.e. to install the library).
-#.PHONY: .defaults.python-lib-src-image
-#.defaults.python-lib-src-image:: # Must be called with a DOCKER_LOCAL_IMAGE= settings.
-#	@# Help: Build the Python $(DOCKER_LOCAL_IMAGE) using the $(DOCKER_FILE), requirements.txt and data-processing-lib/python source
-#ifeq ($(USE_REPO_LIB_SRC), 1)
-#	$(MAKE) LIB_PATH=$(DPK_PYTHON_LIB_DIR) LIB_NAME=data-processing-lib-python .defaults.copy-lib
-#endif
-#	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) .defaults.image
-#	-rm -rf data-processing-lib-python
 	
 .PHONY: .default.build-lib-wheel
 .default.build-lib-wheel:
-	make -C $(REPOROOT)/data-processing-lib build-pkg-dist
+	$(MAKE) -C $(REPOROOT)/data-processing-lib build-pkg-dist
 	rm -rf data-processing-dist && mkdir data-processing-dist
 	cp $(REPOROOT)/data-processing-lib/dist/*.whl data-processing-dist
+
+
+# Build and image using the local Dockerfile 
+# Assumes wheel has already been created
+.PHONY: .defaults.lib-whl-image 
+.defaults.lib-whl-image::
+	# Must be called with a DOCKER_LOCAL_IMAGE= settings.
+	@# Help: Build the Python $(DOCKER_LOCAL_IMAGE) using the the wheel file for the library
+	@$(eval LIB_WHEEL_FILE := $(shell find data-processing-dist/*.whl))
+	$(eval LIB_WHEEL_FILE := $(shell basename $(LIB_WHEEL_FILE)))
+	$(MAKE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
+
 
 # Build and image using the local Dockerfile and make the wheel for data-processing-lib
 # available in the current directory for use by the Dockerfile (i.e. to install the library).
@@ -270,27 +272,8 @@ __check_defined = \
 	@# Help: Build the Python $(DOCKER_LOCAL_IMAGE) using the the wheel file for the library
 	@$(eval LIB_WHEEL_FILE := $(shell find data-processing-dist/*.whl))
 	$(eval LIB_WHEEL_FILE := $(shell basename $(LIB_WHEEL_FILE)))
-	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
+	$(MAKE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
 	-rm -rf data-processing-dist
-
-# Build an image using the local Dockerfile and make the data-processing-lib/ray
-# available in the current directory for use by the Dockerfile (i.e. to install the library). 
-# Note that this looks for the ../python directory, which is currently only used in the transform projects,
-# but we add it here as a convenience to avoid duplicating a lot of this in transforms/.make.transforms.
-#.PHONY: .defaults.ray-lib-src-image
-#.defaults.ray-lib-src-image:: # Must be called with a DOCKER_LOCAL_IMAGE= settings.
-#	@# Help: Build the Ray $(DOCKER_LOCAL_IMAGE) using the $(DOCKER_FILE), requirements.txt and data-processing-libs source
-#ifeq ($(USE_REPO_LIB_SRC), 1)
-#	$(MAKE) LIB_PATH=$(DPK_PYTHON_LIB_DIR) LIB_NAME=data-processing-lib-python .defaults.copy-lib
-#	$(MAKE) LIB_PATH=$(DPK_RAY_LIB_DIR) LIB_NAME=data-processing-lib-ray .defaults.copy-lib
-#endif
-#	if [ -e ../python ]; then								\
-#		$(MAKE) LIB_PATH=../python LIB_NAME=python-transform .defaults.copy-lib;	\
-#	fi
-#	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) .defaults.image
-#	-rm -rf data-processing-lib-python
-#	-rm -rf data-processing-lib-ray
-#	-rm -rf python-transform 
 
 
 # Build an image using the local Dockerfile and make the data-processing wheel 
@@ -306,7 +289,7 @@ __check_defined = \
 	if [ -e ../python ]; then								\
 		$(MAKE) LIB_PATH=../python LIB_NAME=python-transform .defaults.copy-lib;	\
 	fi
-	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
+	$(MAKE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
 	-rm -rf python-transform 
 	-rm -rf data-processing-dist
 
@@ -316,24 +299,6 @@ __check_defined = \
 .defaults.spark-lib-base-image: 
 	$(MAKE) -C $(DPK_SPARK_LIB_DIR) image
 
-# Note that this looks for the ../python directory, which is currently only used in the transform projects,
-# but we add it here as a convenience to avoid duplicating a lot of this in transforms/.make.transforms.
-# Must be called with a DOCKER_LOCAL_IMAGE= settings.
-#.PHONY: .defaults.spark-lib-src-image
-#.defaults.spark-lib-src-image:: .defaults.spark-lib-base-image
-#	@# Help: Build the Spark $(DOCKER_LOCAL_IMAGE) using the $(DOCKER_FILE), requirements.txt and data-processing-libs source
-#	$(MAKE) IMAGE_NAME_TO_VERIFY=$(DOCKER_SPARK_BASE_IMAGE_NAME) .defaults.verify-image-availability
-#ifeq ($(USE_REPO_LIB_SRC), 1)
-#	$(MAKE) LIB_PATH=$(DPK_PYTHON_LIB_DIR) LIB_NAME=data-processing-lib-python .defaults.copy-lib
-#	$(MAKE) LIB_PATH=$(DPK_SPARK_LIB_DIR) LIB_NAME=data-processing-lib-spark .defaults.copy-lib
-#endif
-#	if [ -e ../python ]; then								\
-#		$(MAKE) LIB_PATH=../python LIB_NAME=python-transform .defaults.copy-lib;	\
-#	fi
-#	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) BASE_IMAGE=$(DOCKER_SPARK_BASE_IMAGE) .defaults.image
-#	-rm -rf data-processing-lib-python
-#	-rm -rf data-processing-lib-spark
-#	-rm -rf python-transform 
 
 .PHONY: .defaults.spark-lib-whl-image
 .defaults.spark-lib-whl-image:: .default.build-lib-wheel .defaults.spark-lib-base-image
@@ -345,7 +310,7 @@ __check_defined = \
 	if [ -e ../python ]; then								\
 		$(MAKE) LIB_PATH=../python LIB_NAME=python-transform .defaults.copy-lib;	\
 	fi
-	$(MAKE) DOCKER_IMAGE=$(DOCKER_LOCAL_IMAGE) BASE_IMAGE=$(DOCKER_SPARK_BASE_IMAGE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
+	$(MAKE) BASE_IMAGE=$(DOCKER_SPARK_BASE_IMAGE) DPK_WHEEL_FILE_NAME=$(LIB_WHEEL_FILE) .defaults.image
 	-rm -rf python-transform 
 	-rm -rf data-processing-dist
 

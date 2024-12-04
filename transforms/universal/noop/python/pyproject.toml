@@ -10,7 +10,7 @@ authors = [
     { name = "Boris Lublinsky", email = "blublinsky@ibm.com" },
 ]
 dependencies = [
-    "data-prep-toolkit==0.2.3.dev0",
+    "data-prep-toolkit>=0.2.3.dev0",
 ]
 
 [build-system]
